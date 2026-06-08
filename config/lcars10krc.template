@@ -1,0 +1,22 @@
+# ~/.lcars10krc — LCARS10k configuration. Copy to your $HOME and edit.
+
+# Where the lcars10k repo is checked out.
+export LCARS_HOME="$HOME/.lcars10k"
+
+# Master switch for sound effects. Set to 1 to enable.
+export LCARS_SOUNDS=0
+
+# Seconds threshold for the "long command done" beep.
+export LCARS_LONGCMD_THRESHOLD=5
+
+# 1 = auto-engage Red Alert on 3 consecutive failures. 0 = manual only.
+export LCARS_REDALERT_AUTO=1
+
+# 1 = show Okuda-style numeric ID prefixes (LCARS-47-348-12). 0 = hide.
+export LCARS_NUMERIC_IDS=1
+
+# Sound file paths. Override to use your own samples.
+export LCARS_SOUND_STARTUP="$LCARS_HOME/sounds/computer-boot.wav"
+export LCARS_SOUND_SUCCESS="$LCARS_HOME/sounds/beep-chirp.wav"
+export LCARS_SOUND_FAILURE="$LCARS_HOME/sounds/error-warble.wav"
+export LCARS_SOUND_LONGCMD="$LCARS_HOME/sounds/task-complete.wav"
