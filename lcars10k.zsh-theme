@@ -1,13 +1,10 @@
 # vim:ft=zsh ts=2 sw=2 sts=2 et fenc=utf-8
 ################################################################
-# Powerlevel10k Theme
-# https://github.com/romkatv/powerlevel10k
+# lcars10k — LCARS-themed Zsh prompt, hard-fork of powerlevel10k.
 #
-# Forked from Powerlevel9k Theme
-# https://github.com/bhilburn/powerlevel9k
-#
-# Which in turn was forked from Agnoster Theme
-# https://github.com/robbyrussell/oh-my-zsh/blob/74177c5320b2a1b2f8c4c695c05984b57fd7c6ea/themes/agnoster.zsh-theme
+# License: MIT (powerlevel10k base) + LCARS-specific code MIT.
+# Upstream (fork base): https://github.com/romkatv/powerlevel10k
+# This fork: https://github.com/wyretrip/lcars10k
 ################################################################
 
 # Temporarily change options.
@@ -61,7 +58,7 @@ function _p9k_init_locale() {
   if [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]]; then
     if [[ -w $__p9k_root_dir && -w $__p9k_root_dir/internal && -w $__p9k_root_dir/gitstatus ]]; then
       local f
-      for f in $__p9k_root_dir/{powerlevel9k.zsh-theme,powerlevel10k.zsh-theme,internal/p10k.zsh,internal/icons.zsh,internal/configure.zsh,internal/worker.zsh,internal/parser.zsh,gitstatus/gitstatus.plugin.zsh,gitstatus/install}; do
+      for f in $__p9k_root_dir/{powerlevel9k.zsh-theme,lcars10k.zsh-theme,internal/p10k.zsh,internal/icons.zsh,internal/configure.zsh,internal/worker.zsh,internal/parser.zsh,gitstatus/gitstatus.plugin.zsh,gitstatus/install}; do
         [[ $f.zwc -nt $f ]] && continue
         zmodload -F zsh/files b:zf_mv b:zf_rm
         local tmp=$f.tmp.$$.zwc
