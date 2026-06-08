@@ -1,7 +1,9 @@
 # tests/lib.zsh — tiny Zsh assertion helpers. No external dependencies.
 
-typeset -gi LCARS_TESTS_PASSED=0
-typeset -gi LCARS_TESTS_FAILED=0
+# Counters are global and survive re-sourcing — test files that source lib.zsh
+# (e.g. for assertion helpers) should not reset the running tally.
+typeset -gi LCARS_TESTS_PASSED=${LCARS_TESTS_PASSED:-0}
+typeset -gi LCARS_TESTS_FAILED=${LCARS_TESTS_FAILED:-0}
 
 lcars_assert_eq() {
     local expected="$1" actual="$2" msg="${3:-}"
