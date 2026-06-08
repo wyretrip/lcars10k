@@ -77,4 +77,51 @@ function _p9k_init_locale() {
 (( $+__p9k_instant_prompt_active )) && unsetopt prompt_cr prompt_sp || setopt prompt_cr prompt_sp
 
 (( ${#__p9k_src_opts} )) && setopt ${__p9k_src_opts[@]}
+
+# ============================================================
+# LCARS10k overlay (added by hard fork — wyretrip/lcars10k)
+# ============================================================
+
+# Resolve the directory this theme file lives in
+typeset -g _LCARS_ROOT="${${(%):-%x}:A:h}"
+
+# 1. Palette must load first so segments inherit colors
+source "$_LCARS_ROOT/lib/lcars-palette.zsh"
+
+# 2. Custom segments
+source "$_LCARS_ROOT/lib/lcars-segments.zsh"
+
+# 3. Shape (separators + UPPERCASE)
+source "$_LCARS_ROOT/lib/lcars-shape.zsh"
+
+# 4. User config (overrides defaults). Sourced after defaults, before behavior hooks.
+[[ -r "$HOME/.lcars10krc" ]] && source "$HOME/.lcars10krc"
+
+# 5. Behavior modules (use the configured env vars)
+source "$_LCARS_ROOT/lib/lcars-quiet.zsh"
+source "$_LCARS_ROOT/lib/lcars-redalert.zsh"
+source "$_LCARS_ROOT/lib/lcars-sounds.zsh"
+
+# 6. Wire LCARS segments into the prompt arrays. We prepend hostid/dirid to the left
+#    prompt and add lcars_date / lcars_err to the right prompt.
+if (( ${+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS} )); then
+    if (( ${LCARS_NUMERIC_IDS:-1} == 1 )); then
+        POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(lcars_hostid lcars_dirid "${POWERLEVEL9K_LEFT_PROMPT_ELEMENTS[@]}")
+    fi
+fi
+
+if (( ${+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS} )); then
+    POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
+        "${POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS[@]}"
+        lcars_date
+        lcars_err
+    )
+else
+    POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(command_execution_time lcars_date lcars_err)
+fi
+
+# Public wrapper: lcars10k <subcommand> -> delegates to p10k.
+lcars10k() {
+    p10k "$@"
+}
 'builtin' 'unset' '__p9k_src_opts'
