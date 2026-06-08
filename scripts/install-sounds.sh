@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# scripts/install-sounds.sh — download TNG-flavored sound samples for lcars10k.
+#
+# CBS/Paramount audio is fetched for personal/fan use. The repo itself ships no
+# Star Trek audio. If you redistribute lcars10k, do so without populated sounds/.
+
+set -euo pipefail
+
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SOUNDS_DIR="$SCRIPT_DIR/../sounds"
+
+# role -> URL. Verified at install-script authoring time (2026-06-08).
+# Source: TrekCore audio archive (https://www.trekcore.com/audio/)
+# Parallel arrays: LCARS_FILES[i] -> LCARS_URLS[i]
+LCARS_FILES=(
+    "computer-boot.wav"
+    "beep-chirp.wav"
+    "error-warble.wav"
+    "task-complete.wav"
+)
+LCARS_URLS=(
+    "https://www.trekcore.com/audio/computer/sequences/computerbeepsequence1.mp3"
+    "https://www.trekcore.com/audio/computer/hailbeep_clean.mp3"
+    "https://www.trekcore.com/audio/computer/input_failed_clean.mp3"
+    "https://www.trekcore.com/audio/computer/input_ok_1_clean.mp3"
+)
+
+FORCE=0
+[[ "${1:-}" == "--force" ]] && FORCE=1
+
+mkdir -p "$SOUNDS_DIR"
+
+echo "Downloading TNG sound samples into $SOUNDS_DIR"
+echo "(audio is CBS/Paramount IP, fetched for personal use)"
+echo
+
+for i in "${!LCARS_FILES[@]}"; do
+    filename="${LCARS_FILES[$i]}"
+    url="${LCARS_URLS[$i]}"
+    target="$SOUNDS_DIR/$filename"
+
+    if [[ -f "$target" && $FORCE -eq 0 ]]; then
+        echo "  skip: $filename (exists; pass --force to redownload)"
+        continue
+    fi
+
+    echo "  fetch: $filename"
+    # download to tmp, convert MP3->WAV if sox is installed
+    tmp="$(mktemp -t lcars-sound).$i"
+    if ! curl -sLfo "$tmp" "$url"; then
+        echo "    ERROR: failed to fetch $url" >&2
+        rm -f "$tmp"
+        continue
+    fi
+    if command -v sox >/dev/null 2>&1; then
+        sox "$tmp" -r 44100 -c 2 "$target" norm -1
+    else
+        # No sox — afplay handles mp3 too, just rename
+        mv "$tmp" "$target"
+        echo "    note: sox not installed; sound is unnormalised. brew install sox to fix."
+    fi
+    rm -f "$tmp"
+done
+
+echo
+echo "Done. Set LCARS_SOUNDS=1 in ~/.lcars10krc to enable playback."
