@@ -1,3 +1,83 @@
+# lcars10k
+
+A Star Trek LCARS-themed Zsh prompt, hard-forked from
+[powerlevel10k](https://github.com/romkatv/powerlevel10k).
+
+![Screenshot placeholder — drop a terminal screenshot here]
+
+## What it adds
+
+- **Okuda palette** mapped onto every p10k segment (pumpkin, peach, tan, lilac, sky, alert).
+- **Round pill separators** between segments (requires a Nerd Font).
+- **UPPERCASE** segments for the LCARS feel.
+- **Okuda-style numeric IDs** prefixed to host and directory segments.
+- **Right prompt** with real-date, exit code (`ERR XX`), and command duration.
+- **Red Alert mode** — palette flips alert-red on three consecutive failures, or on demand via `lcars-redalert on`.
+- **Optional TNG sounds** — startup chime, success chirp, failure warble, long-command-done beep. Off by default.
+- **Font bundle** — MesloLGS NF for the terminal, Antonio for system display. (Federation / LCARSGTJ3 require manual install — see below.)
+
+## Requirements
+
+- macOS (v1 is macOS-only; Linux/WSL is on the v2 roadmap)
+- Zsh ≥ 5.8
+- A Nerd Font in your terminal (MesloLGS NF is bundled and recommended)
+- Optional: Homebrew + `sox` for sound normalisation
+
+## Install
+
+```sh
+# 1. Clone
+git clone https://github.com/wyretrip/lcars10k ~/.lcars10k
+
+# 2. Install fonts (copies bundled fonts into ~/Library/Fonts)
+~/.lcars10k/scripts/install-fonts.sh
+
+# 3. (optional) Download TNG sound samples
+~/.lcars10k/scripts/install-sounds.sh
+
+# 4. Add to ~/.zshrc
+echo 'source ~/.lcars10k/lcars10k.zsh-theme' >> ~/.zshrc
+
+# 5. (optional) Personalise
+cp ~/.lcars10k/config/lcars10krc.template ~/.lcars10krc
+
+# 6. Set your terminal font to "MesloLGS NF" and restart your shell.
+```
+
+### Optional display fonts (manual install)
+
+Federation and LCARSGTJ3 are LCARS-flavored display fonts that we could not bundle due to unclear redistribution licenses. If you want them for non-terminal use (browser, system UI, screenshots), install manually:
+
+- **Federation** — search "Federation font Pixel Sagas" and download from the original source. Check the included license; some variants require a commercial license for redistribution.
+- **LCARSGTJ3** — search "LCARSGTJ3 Joey Bumgardner". Originally distributed for free use.
+
+After downloading, drop the `.ttf` files into `~/Library/Fonts` directly, or run `~/.lcars10k/scripts/install-fonts.sh` after placing them under `~/.lcars10k/fonts/Federation/` or `~/.lcars10k/fonts/LCARSGTJ3/`.
+
+## Configuration
+
+All options live in `~/.lcars10krc`. The most useful knobs:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `LCARS_SOUNDS` | `0` | Set to `1` to enable sound effects |
+| `LCARS_LONGCMD_THRESHOLD` | `5` | Seconds before a command counts as "long" |
+| `LCARS_REDALERT_AUTO` | `1` | Auto-engage Red Alert on 3 consecutive failures |
+| `LCARS_NUMERIC_IDS` | `1` | Show LCARS Okuda IDs in the prompt |
+
+## Commands
+
+- `lcars-quiet` — silence sounds for the current session
+- `lcars-loud` — re-enable sounds for the current session
+- `lcars-redalert on` / `off` / `auto` — manual control of Red Alert mode
+
+## Heritage
+
+This is a hard fork of [romkatv/powerlevel10k](https://github.com/romkatv/powerlevel10k).
+The p10k engine is unchanged; lcars10k is purely an additive overlay (palette, separators,
+custom segments, hooks). Everything below this section is the original p10k README.
+
+---
+
 # Powerlevel10k
 [![Gitter](https://badges.gitter.im/powerlevel10k/community.svg)](
   https://gitter.im/powerlevel10k/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
