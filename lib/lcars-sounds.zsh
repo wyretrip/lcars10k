@@ -7,7 +7,7 @@ _lcars_play() {
     [[ -z "$file" ]] && return 0
     [[ "${LCARS_SOUNDS:-0}" != "1" ]] && return 0
     [[ ! -r "$file" ]] && return 0
-    afplay "$file"
+    afplay "$file" &!
 }
 
 # Internal: handle the precmd dispatch. Pure function for testability.
