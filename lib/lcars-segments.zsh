@@ -45,7 +45,7 @@ prompt_lcars_dirid() {
 }
 
 prompt_lcars_date() {
-    p10k segment -t "${(D)$(date '+%Y-%m-%d %H:%M:%S')}"
+    p10k segment -t "$(date '+%Y-%m-%d %H:%M:%S')"
 }
 
 prompt_lcars_err() {
