@@ -33,9 +33,7 @@ _lcars_format_okuda_id() {
 }
 
 prompt_lcars_hostid() {
-    local id
-    id=$(_lcars_hash_to_digits "${HOST}" 6)
-    p10k segment -t "LCARS-$(_lcars_format_okuda_id "$id")"
+    p10k segment -t "LCARS"
 }
 
 prompt_lcars_dirid() {

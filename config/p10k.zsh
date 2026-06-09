@@ -42,6 +42,8 @@
         context
         dir
         vcs
+        newline       # break to a second line for the actual prompt char
+        prompt_char   # the > where you type
     )
     typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
         command_execution_time
@@ -54,10 +56,13 @@
         POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=("${(@)POWERLEVEL9K_LEFT_PROMPT_ELEMENTS:#lcars_(hostid|dirid)}")
     fi
 
-    typeset -g POWERLEVEL9K_PROMPT_ON_NEWLINE=false
-    typeset -g POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
-    typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=false
-    typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=off
+    # Two-line prompt: pills on line 1, input cursor on line 2.
+    typeset -g POWERLEVEL9K_PROMPT_ON_NEWLINE=false  # we use the `newline` segment instead
+    typeset -g POWERLEVEL9K_RPROMPT_ON_NEWLINE=false  # right prompt stays beside the pills
+    typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=true   # blank line above each new prompt
+    # Transient prompt: collapse prior prompts to just the input line when a
+    # command runs. Pills only show on the *current* prompt.
+    typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=always
     typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
 
     # Mode (vi/etc) indicator: hide
@@ -102,6 +107,24 @@
     typeset -g POWERLEVEL9K_LCARS_ERR_BACKGROUND=$alert
     typeset -g POWERLEVEL9K_LCARS_ERR_FOREGROUND=$cream
 
+    # --- prompt_char (line-2 input indicator, no pill around it) ---
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_BACKGROUND=
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=$sky
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=$pumpkin
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_VIINS_CONTENT_EXPANSION='❯'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_VICMD_CONTENT_EXPANSION='❮'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_VIVIS_CONTENT_EXPANSION='V'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_VIOWR_CONTENT_EXPANSION='▶'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_VIINS_CONTENT_EXPANSION='❯'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_VICMD_CONTENT_EXPANSION='❮'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_VIVIS_CONTENT_EXPANSION='V'
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_VIOWR_CONTENT_EXPANSION='▶'
+    # No pill caps around prompt_char (it's bare on line 2)
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_LEFT_PROMPT_FIRST_SEGMENT_START_SYMBOL=
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_LEFT_LEFT_WHITESPACE=
+    typeset -g POWERLEVEL9K_PROMPT_CHAR_RIGHT_LEFT_WHITESPACE=
+
     # ============================================================
     # Standard segments (re-styled for LCARS)
     # ============================================================
@@ -142,11 +165,10 @@
     # --- dir ---
     typeset -g POWERLEVEL9K_DIR_BACKGROUND=$rose
     typeset -g POWERLEVEL9K_DIR_FOREGROUND=$black
-    # Pad with a space on each side so the round pill caps don't sit
-    # directly against short content like '~' (the home-dir abbreviation)
-    # — without this, '~' between two U+E0B4 half-circles reads as "D~D".
     # Dir is NOT uppercased — paths read better in their natural case.
-    typeset -g POWERLEVEL9K_DIR_CONTENT_EXPANSION=' ${P9K_CONTENT} '
+    # (No (U) wrapping; that interacts badly with very short content and
+    # produces extra cap glyphs flanking the `~`.)
+    typeset -g POWERLEVEL9K_DIR_CONTENT_EXPANSION='${P9K_CONTENT}'
     typeset -g POWERLEVEL9K_DIR_ANCHOR_BOLD=false
     typeset -g POWERLEVEL9K_DIR_PREFIX=''
     typeset -g POWERLEVEL9K_SHORTEN_STRATEGY=truncate_to_unique
