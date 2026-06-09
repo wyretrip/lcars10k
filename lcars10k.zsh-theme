@@ -81,44 +81,34 @@ function _p9k_init_locale() {
 # ============================================================
 # LCARS10k overlay (added by hard fork — wyretrip/lcars10k)
 # ============================================================
+#
+# Static prompt configuration (palette, separators, segment layout, vcs
+# formatter) lives in config/p10k.zsh, installed as ~/.p10k.zsh by
+# scripts/setup.sh. p10k loads that during its own init above, so by the time
+# we get here every POWERLEVEL9K_* var is already set.
+#
+# This block sources the runtime behavior modules:
+#   - lcars-segments.zsh: defines prompt_lcars_* segment functions
+#   - lcars-palette.zsh:  defines runtime palette-swap helpers for red alert
+#   - lcars-quiet.zsh:    lcars-quiet / lcars-loud session toggles
+#   - lcars-redalert.zsh: red-alert mode (state machine + palette swap)
+#   - lcars-sounds.zsh:   sound hooks (precmd/preexec)
 
-# Resolve the directory this theme file lives in
 typeset -g _LCARS_ROOT="${${(%):-%x}:A:h}"
 
-# 1. Palette must load first so segments inherit colors
-source "$_LCARS_ROOT/lib/lcars-palette.zsh"
-
-# 2. Custom segments
+# Segments must be defined before the first prompt render
 source "$_LCARS_ROOT/lib/lcars-segments.zsh"
 
-# 3. Shape (separators + UPPERCASE)
-source "$_LCARS_ROOT/lib/lcars-shape.zsh"
+# Palette swap helpers (used by red alert)
+source "$_LCARS_ROOT/lib/lcars-palette.zsh"
 
-# 4. User config (overrides defaults). Sourced after defaults, before behavior hooks.
+# User config — env-var-level overrides (LCARS_SOUNDS, thresholds, sound paths)
 [[ -r "$HOME/.lcars10krc" ]] && source "$HOME/.lcars10krc"
 
-# 5. Behavior modules (use the configured env vars)
+# Behavior modules — these read the env vars set above
 source "$_LCARS_ROOT/lib/lcars-quiet.zsh"
 source "$_LCARS_ROOT/lib/lcars-redalert.zsh"
 source "$_LCARS_ROOT/lib/lcars-sounds.zsh"
-
-# 6. Wire LCARS segments into the prompt arrays. We prepend hostid/dirid to the left
-#    prompt and add lcars_date / lcars_err to the right prompt.
-if (( ${+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS} )); then
-    if (( ${LCARS_NUMERIC_IDS:-1} == 1 )); then
-        POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(lcars_hostid lcars_dirid "${POWERLEVEL9K_LEFT_PROMPT_ELEMENTS[@]}")
-    fi
-fi
-
-if (( ${+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS} )); then
-    POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
-        "${POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS[@]}"
-        lcars_date
-        lcars_err
-    )
-else
-    POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(command_execution_time lcars_date lcars_err)
-fi
 
 # Public wrapper: lcars10k <subcommand> -> delegates to p10k.
 lcars10k() {
