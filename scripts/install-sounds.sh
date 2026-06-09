@@ -19,8 +19,8 @@ LCARS_FILES=(
     "task-complete.wav"
 )
 LCARS_URLS=(
-    "https://www.trekcore.com/audio/computer/sequences/computerbeepsequence1.mp3"
-    "https://www.trekcore.com/audio/computer/hailbeep_clean.mp3"
+    "https://www.trekcore.com/audio/computer/computerbeep_1.mp3"
+    "https://www.trekcore.com/audio/computer/computerbeep_12.mp3"
     "https://www.trekcore.com/audio/computer/input_failed_clean.mp3"
     "https://www.trekcore.com/audio/computer/input_ok_1_clean.mp3"
 )
