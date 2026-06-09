@@ -33,7 +33,7 @@ _lcars_format_okuda_id() {
 }
 
 prompt_lcars_hostid() {
-    p10k segment -t "LCARS"
+    p10k segment -t $' LCARS'
 }
 
 prompt_lcars_dirid() {
