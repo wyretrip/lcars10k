@@ -250,7 +250,10 @@
     typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND=$black
     typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=${LCARS_LONGCMD_THRESHOLD:-5}
     typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=1
-    typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FORMAT='+d.h'
+    typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FORMAT='H:M:S'
+    # Drop the default stopwatch icon — wasn't disabled before and was
+    # rendering as ? in a box.
+    typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_VISUAL_IDENTIFIER_EXPANSION=''
 
     # ============================================================
     # Gitstatus tuning

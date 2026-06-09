@@ -1,27 +1,37 @@
 # ~/.lcars10krc — LCARS10k configuration. Copy to your $HOME and edit.
 
-# Where the lcars10k repo is checked out.
+# Where the lcars10k repo is checked out. Override if you cloned elsewhere
+# than the default ~/.lcars10k path.
 export LCARS_HOME="$HOME/.lcars10k"
 
-# Master switch for sound effects. Set to 1 to enable.
+# ----------------------------------------------------------------------
+# Sound effects
+# ----------------------------------------------------------------------
+# Master switch. 1 = play sounds on shell events; 0 = silent.
+# Within a session you can also use the `lcars-quiet` / `lcars-loud`
+# functions to toggle.
 export LCARS_SOUNDS=0
 
-# Seconds threshold for the "long command done" beep.
+# Seconds threshold for the "long command done" beep. Commands shorter
+# than this play the success/failure chirp instead.
 export LCARS_LONGCMD_THRESHOLD=5
-
-# 1 = auto-engage Red Alert on 3 consecutive failures. 0 = manual only.
-export LCARS_REDALERT_AUTO=1
-
-# 1 = show Okuda-style numeric ID prefixes (LCARS-47-348-12). 0 = hide.
-export LCARS_NUMERIC_IDS=1
-
-# 1 = use the opinionated pure-LCARS prompt layout (recommended).
-# 0 = layer LCARS palette/separators on top of your existing p10k preset
-# (keeps p10k's default icons + dir leaf highlighting; less canonical-LCARS).
-export LCARS_PURE_PROMPT=1
 
 # Sound file paths. Override to use your own samples.
 export LCARS_SOUND_STARTUP="$LCARS_HOME/sounds/computer-boot.wav"
 export LCARS_SOUND_SUCCESS="$LCARS_HOME/sounds/beep-chirp.wav"
 export LCARS_SOUND_FAILURE="$LCARS_HOME/sounds/error-warble.wav"
 export LCARS_SOUND_LONGCMD="$LCARS_HOME/sounds/task-complete.wav"
+
+# ----------------------------------------------------------------------
+# Red Alert mode
+# ----------------------------------------------------------------------
+# 1 = auto-engage Red Alert palette on 3 consecutive command failures.
+# 0 = manual only (you toggle via `lcars-redalert on|off`).
+export LCARS_REDALERT_AUTO=1
+
+# ----------------------------------------------------------------------
+# Prompt content toggles
+# ----------------------------------------------------------------------
+# 1 = show the Okuda-style numeric ID pills (LCARS, dirid like 15-48).
+# 0 = hide them, leaving just context + dir + vcs.
+export LCARS_NUMERIC_IDS=1

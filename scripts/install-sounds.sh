@@ -53,11 +53,16 @@ for i in "${!LCARS_FILES[@]}"; do
         continue
     fi
     if command -v sox >/dev/null 2>&1; then
-        sox "$tmp" -r 44100 -c 2 "$target" norm -1
+        # TrekCore URLs serve MP3 regardless of target extension. Tell sox
+        # explicitly with -t mp3 so it doesn't try to detect from $tmp's
+        # extension-less name. Output is real PCM WAV at -1 dB peak.
+        sox -t mp3 "$tmp" -r 44100 -c 2 "$target" norm -1
     else
-        # No sox — afplay handles mp3 too, just rename
+        # No sox — afplay handles mp3-in-.wav transparently, just rename.
+        # The file will be unnormalised; install sox and rerun with --force
+        # to normalize properly.
         mv "$tmp" "$target"
-        echo "    note: sox not installed; sound is unnormalised. brew install sox to fix."
+        echo "    note: sox not installed; sound is unnormalised. brew install sox && rerun with --force to fix."
     fi
     rm -f "$tmp"
 done

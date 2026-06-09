@@ -110,8 +110,6 @@ source "$_LCARS_ROOT/lib/lcars-quiet.zsh"
 source "$_LCARS_ROOT/lib/lcars-redalert.zsh"
 source "$_LCARS_ROOT/lib/lcars-sounds.zsh"
 
-# Public wrapper: lcars10k <subcommand> -> delegates to p10k.
-lcars10k() {
-    p10k "$@"
-}
+# User-facing CLI: lcars10k {setup,reload,quiet,loud,redalert,version,help}
+source "$_LCARS_ROOT/lib/lcars-cli.zsh"
 'builtin' 'unset' '__p9k_src_opts'
