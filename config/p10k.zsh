@@ -83,8 +83,11 @@
     typeset -g POWERLEVEL9K_RIGHT_PROMPT_FIRST_SEGMENT_START_SYMBOL=$''
     typeset -g POWERLEVEL9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL=$''
 
-    typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=' '
-    typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=' '
+    # NOTE: subsegment separators only render between two ADJACENT segments that
+    # share a background color. Every pill here is a different color, so these
+    # never draw — the rounded joins come from *_SEGMENT_SEPARATOR above.
+    typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=''
+    typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=''
 
     # ============================================================
     # Custom segments (LCARS-specific)
