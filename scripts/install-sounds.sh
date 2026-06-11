@@ -22,8 +22,15 @@ LCARS_URLS=(
     "https://www.trekcore.com/audio/computer/computerbeep_1.mp3"
     "https://www.trekcore.com/audio/computer/computerbeep_12.mp3"
     "https://www.trekcore.com/audio/computer/input_failed_clean.mp3"
-    "https://www.trekcore.com/audio/computer/input_ok_1_clean.mp3"
+    "https://www.trekcore.com/audio/computer/computerbeep_6.mp3"
 )
+
+# Target RMS loudness (dBFS) every sample is matched to, so no single event
+# (startup, error) drowns out the frequent success chirp. Peak normalisation
+# alone doesn't do this: dense/sustained samples sit far louder in RMS than
+# short transients at the same peak. ~-15 dB matches the quietest TNG clips
+# (beep-chirp, task-complete) and leaves comfortable headroom below 0 dBFS.
+TARGET_RMS_DB=-15.35
 
 FORCE=0
 [[ "${1:-}" == "--force" ]] && FORCE=1
@@ -55,8 +62,20 @@ for i in "${!LCARS_FILES[@]}"; do
     if command -v sox >/dev/null 2>&1; then
         # TrekCore URLs serve MP3 regardless of target extension. Tell sox
         # explicitly with -t mp3 so it doesn't try to detect from $tmp's
-        # extension-less name. Output is real PCM WAV at -1 dB peak.
+        # extension-less name. Output is real PCM WAV, peak-capped at -1 dB.
         sox -t mp3 "$tmp" -r 44100 -c 2 "$target" norm -1
+        # Match perceived loudness across all samples: measure this file's RMS
+        # and shift it onto TARGET_RMS_DB. Dense clips get attenuated; sharp,
+        # transient clips (whose RMS sits far below their peak) need gaining up,
+        # which would push peaks past 0 dBFS — so use sox's limiter (gain -l) to
+        # tame those peaks instead of hard-clipping. On the attenuated files the
+        # limiter is a no-op.
+        rms="$(sox "$target" -n stats 2>&1 | awk '/^RMS lev dB/ {print $4; exit}')"
+        if [[ -n "$rms" ]]; then
+            delta="$(awk -v t="$TARGET_RMS_DB" -v r="$rms" 'BEGIN { printf "%.2f", t - r }')"
+            sox "$target" "$tmp.norm.wav" gain -l "$delta"
+            mv "$tmp.norm.wav" "$target"
+        fi
     else
         # No sox — afplay handles mp3-in-.wav transparently, just rename.
         # The file will be unnormalised; install sox and rerun with --force
