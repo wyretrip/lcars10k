@@ -9,7 +9,8 @@
 #             auto-pointed at this repo's location)
 #   Step 3  — ~/.p10k.zsh symlinked to lcars10k's config (your wizard
 #             config is backed up to ~/.p10k.zsh.pre-lcars10k)
-#   Step 4  — fonts (MesloLGS NF + Antonio) installed to ~/Library/Fonts
+#   Step 4  — fonts (MesloLGS NF, MesloLGS NF LCARS, Antonio) installed to
+#             ~/Library/Fonts; the LCARS variant carries the Starfleet delta
 #   Step 5  — TNG sound samples fetched into sounds/ (off by default;
 #             enable with LCARS_SOUNDS=1 in ~/.lcars10krc)
 #   Step 6  — terminal profile / font config for iTerm2, Terminal.app,
@@ -36,8 +37,11 @@ LCARSRC_TEMPLATE="$LCARS_HOME/config/lcars10krc.template"
 P10KRC="$HOME/.p10k.zsh"
 P10K_BACKUP="$HOME/.p10k.zsh.pre-lcars10k"
 P10K_SRC="$LCARS_HOME/config/p10k.zsh"
-FONT_PS_NAME="MesloLGSNF-Regular"
-FONT_DISPLAY_NAME="MesloLGS NF"
+# Use the LCARS-patched Meslo variant as the terminal font so the Starfleet
+# delta (U+E100) renders in the LCARS host pill. It's a separate font family
+# from stock "MesloLGS NF"; both are installed by install-fonts.sh.
+FONT_PS_NAME="MesloLGSNFLCARSRegular"
+FONT_DISPLAY_NAME="MesloLGS NF LCARS"
 FONT_SIZE=13
 
 # Truecolor escape — iTerm2/Ghostty/modern Terminal.app support this.
@@ -83,7 +87,7 @@ ${_bold}WHAT IT TOUCHES${_reset}
   ~/.zshrc                       source line appended
   ~/.lcars10krc                  written from template (LCARS_HOME patched)
   ~/.p10k.zsh                    symlink to config/p10k.zsh (backup preserved)
-  ~/Library/Fonts/               MesloLGS NF + Antonio copied in
+  ~/Library/Fonts/               MesloLGS NF (+ LCARS variant) + Antonio copied in
   ./sounds/*.wav                 TNG audio fetched (~200KB total)
   iTerm2/Terminal/Ghostty conf   LCARS profile or font setting written
 EOF
