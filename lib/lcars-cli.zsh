@@ -16,6 +16,9 @@ COMMANDS
   setup            Run the lcars10k installer (wires .zshrc, configs,
                    fonts, sounds, terminal profile). Pass --help to
                    the installer for its own options.
+  uninstall        Reverse the installer (unwire .zshrc, remove configs,
+                   LCARS fonts, terminal profile). Pass --help / --dry-run
+                   / --yes to the uninstaller.
   reload           Reload the prompt config (run after editing
                    config/p10k.zsh or ~/.lcars10krc).
   quiet            Silence sound effects for this session.
@@ -49,6 +52,14 @@ lcars10k() {
                 return 2
             fi
             "$installer" "$@"
+            ;;
+        uninstall)
+            local uninstaller="${_LCARS_ROOT:-$HOME/.lcars10k}/scripts/uninstall.sh"
+            if [[ ! -x "$uninstaller" ]]; then
+                print -u2 "lcars10k: uninstaller not found or not executable: $uninstaller"
+                return 2
+            fi
+            "$uninstaller" "$@"
             ;;
         reload)
             # p10k is the engine — invoke it directly but don't expose it
