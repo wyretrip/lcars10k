@@ -3,18 +3,19 @@
 A Star Trek LCARS-themed Zsh prompt, hard-forked from
 [powerlevel10k](https://github.com/romkatv/powerlevel10k).
 
-![Screenshot placeholder — drop a terminal screenshot here]
+![lcars10k prompt — LCARS host pill with Starfleet delta, Okuda directory ID, context, path, and git branch on the left; date and ERR status on the right](assets/lcars10k-prompt.png)
 
 ## What it adds
 
 - **Okuda palette** mapped onto every p10k segment (pumpkin, peach, tan, lilac, sky, alert).
 - **Round pill separators** between segments (requires a Nerd Font).
 - **UPPERCASE** segments for the LCARS feel.
+- **Starfleet delta** emblem in the `LCARS` host pill, rendered from a patched font (set your terminal to `MesloLGS NF LCARS` — see [Install](#install)).
 - **Okuda-style numeric IDs** prefixed to host and directory segments.
 - **Right prompt** with real-date, exit code (`ERR XX`), and command duration.
-- **Red Alert mode** — palette flips alert-red on three consecutive failures, or on demand via `lcars-redalert on`.
-- **Optional TNG sounds** — startup chime, success chirp, failure warble, long-command-done beep. Off by default.
-- **Font bundle** — MesloLGS NF for the terminal, Antonio for system display. (Federation / LCARSGTJ3 require manual install — see below.)
+- **Red Alert mode** — palette flips alert-red on three consecutive failures, or on demand via `lcars10k redalert on`.
+- **Optional TNG sounds** — startup chime, success chirp, failure warble, long-command-done beep. Loudness-matched, off by default.
+- **Font bundle** — `MesloLGS NF LCARS` (Meslo patched with the Starfleet delta) and stock `MesloLGS NF` for the terminal, Antonio for system display. (Federation / LCARSGTJ3 require manual install — see below.)
 
 ## Requirements
 
@@ -25,24 +26,42 @@ A Star Trek LCARS-themed Zsh prompt, hard-forked from
 
 ## Install
 
+The one-shot installer wires every piece into place — the `source` line in `~/.zshrc`,
+`~/.lcars10krc` from the template, `~/.p10k.zsh` (your existing config is backed up to
+`~/.p10k.zsh.pre-lcars10k`), fonts, sounds, and your terminal profile. It's idempotent and
+safe to rerun.
+
 ```sh
-# 1. Clone
+# 1. Clone (default location; override LCARS_HOME in ~/.lcars10krc if you clone elsewhere)
 git clone https://github.com/wyretrip/lcars10k ~/.lcars10k
 
-# 2. Install fonts (copies bundled fonts into ~/Library/Fonts)
-~/.lcars10k/scripts/install-fonts.sh
+# 2. Run the installer (also available as `lcars10k setup` once loaded)
+~/.lcars10k/scripts/setup.sh
+#   --dry-run                              preview without changing anything
+#   --skip-fonts | --skip-sounds | --skip-terminal   opt out of a step
+#   --force                                overwrite / redownload
 
-# 3. (optional) Download TNG sound samples
-~/.lcars10k/scripts/install-sounds.sh
-
-# 4. Add to ~/.zshrc
-echo 'source ~/.lcars10k/lcars10k.zsh-theme' >> ~/.zshrc
-
-# 5. (optional) Personalise
-cp ~/.lcars10k/config/lcars10krc.template ~/.lcars10krc
-
-# 6. Set your terminal font to "MesloLGS NF" and restart your shell.
+# 3. Restart your shell  (or: exec zsh)
 ```
+
+The installer sets your terminal font to **`MesloLGS NF LCARS`** — the patched Meslo variant
+that carries the **Starfleet delta** (U+E100) shown in the `LCARS` pill. Stock `MesloLGS NF`
+is installed alongside it and works fine if you prefer it, but it renders a blank where the
+delta should be.
+
+<details>
+<summary>Manual install (if you'd rather not run the script)</summary>
+
+```sh
+~/.lcars10k/scripts/install-fonts.sh                  # fonts → ~/Library/Fonts
+~/.lcars10k/scripts/install-sounds.sh                 # optional TNG samples
+cp ~/.lcars10k/config/lcars10krc.template ~/.lcars10krc
+cp ~/.p10k.zsh ~/.p10k.zsh.pre-lcars10k 2>/dev/null   # back up any existing config
+ln -sf ~/.lcars10k/config/p10k.zsh ~/.p10k.zsh
+echo 'source ~/.lcars10k/lcars10k.zsh-theme' >> ~/.zshrc
+```
+Then set your terminal font to `MesloLGS NF LCARS` and restart your shell.
+</details>
 
 ### Optional display fonts (manual install)
 
@@ -55,20 +74,34 @@ After downloading, drop the `.ttf` files into `~/Library/Fonts` directly, or run
 
 ## Configuration
 
-All options live in `~/.lcars10krc`. The most useful knobs:
+Env-var knobs live in `~/.lcars10krc`. The most useful ones:
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `LCARS_HOME` | `~/.lcars10k` | Where the repo is checked out (override if cloned elsewhere) |
 | `LCARS_SOUNDS` | `0` | Set to `1` to enable sound effects |
 | `LCARS_LONGCMD_THRESHOLD` | `5` | Seconds before a command counts as "long" |
 | `LCARS_REDALERT_AUTO` | `1` | Auto-engage Red Alert on 3 consecutive failures |
 | `LCARS_NUMERIC_IDS` | `1` | Show LCARS Okuda IDs in the prompt |
 
+The four `LCARS_SOUND_*` variables (startup / success / failure / longcmd) can be pointed at
+your own samples. Prompt layout, palette, and segment order live in `~/.p10k.zsh` (installed
+from `config/p10k.zsh`); run `lcars10k reload` after editing either file.
+
 ## Commands
 
-- `lcars-quiet` — silence sounds for the current session
-- `lcars-loud` — re-enable sounds for the current session
-- `lcars-redalert on` / `off` / `auto` — manual control of Red Alert mode
+Everything runs through the `lcars10k` dispatcher:
+
+| Command | Does |
+|---|---|
+| `lcars10k setup` | Run the installer (accepts the flags shown under [Install](#install)) |
+| `lcars10k reload` | Reload the prompt after editing `~/.p10k.zsh` or `~/.lcars10krc` |
+| `lcars10k quiet` / `loud` | Silence / re-enable sounds for the current session |
+| `lcars10k redalert on` / `off` / `auto` | Manual control of Red Alert mode |
+| `lcars10k version` | Print version info |
+| `lcars10k help` | Show help |
+
+The bare functions `lcars-quiet`, `lcars-loud`, and `lcars-redalert on|off|auto` remain available as shortcuts.
 
 ## Heritage
 
@@ -1729,7 +1762,7 @@ running Zsh locally, Google "set UTF-8 locale in *your OS*".
 ### Cursor is in the wrong place
 
 Type `echo '\u276F'`. If you get an error saying "zsh: character not in range", see the
-[previous section](#zsh-character-not-in-range).
+[previous section](#error-character-not-in-range).
 
 If the `echo` command prints `❯` but the cursor is still in the wrong place, install
 [the recommended font](#meslo-nerd-font-patched-for-powerlevel10k) and run
