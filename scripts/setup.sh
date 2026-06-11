@@ -232,8 +232,8 @@ step_fonts() {
         warn "install-fonts.sh not executable; skipping"
         return
     fi
-    if [[ -f "$HOME/Library/Fonts/MesloLGS NF Regular.ttf" && $FORCE -eq 0 ]]; then
-        ok "MesloLGS NF already in ~/Library/Fonts (use --force to reinstall)"
+    if [[ -f "$HOME/Library/Fonts/MesloLGS NF LCARS Regular.ttf" && $FORCE -eq 0 ]]; then
+        ok "MesloLGS NF LCARS already in ~/Library/Fonts (use --force to reinstall)"
         return
     fi
     if (( DRY_RUN )); then
@@ -242,7 +242,7 @@ step_fonts() {
     fi
     "$installer" 2>&1 | sed 's/^/    /'
     ok "fonts installed"
-    note "set your terminal font to ${_sky}MesloLGS NF${_reset} (handled in Step 6 for supported terminals)"
+    note "set your terminal font to ${_sky}MesloLGS NF LCARS${_reset} (handled in Step 6 for supported terminals)"
 }
 
 # ------------------------------------------------------------------------
