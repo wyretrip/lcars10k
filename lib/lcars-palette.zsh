@@ -17,37 +17,38 @@ typeset -gA LCARS_COLORS=(
     cream   "#FFE6D5"   # fg for dark (coffee) segments
 )
 
+# Pills are now floating: every segment background is TRANSPARENT and each
+# pill's color is drawn inside its CONTENT_EXPANSION, which reads the per-pill
+# color from the _LCARS_PILL_BG / _LCARS_PILL_FG maps (defined in
+# config/p10k.zsh). So the palette swap is just reassigning those maps — never
+# the POWERLEVEL9K_*_BACKGROUND vars (setting those would re-paint a solid
+# rectangle behind the pill and destroy the float). `vcs` is absent from the
+# map on purpose: its color is state-dependent and computed in
+# _lcars_vcs_format, which honors _LCARS_REDALERT_ACTIVE directly.
+#
+# Keep these values in sync with the initial _LCARS_PILL_* in config/p10k.zsh.
+
 _lcars_apply_palette() {
-    POWERLEVEL9K_LCARS_HOSTID_BACKGROUND="$LCARS_COLORS[sky]"
-    POWERLEVEL9K_LCARS_HOSTID_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_LCARS_DIRID_BACKGROUND="$LCARS_COLORS[peach]"
-    POWERLEVEL9K_LCARS_DIRID_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_CONTEXT_DEFAULT_BACKGROUND="$LCARS_COLORS[lilac]"
-    POWERLEVEL9K_CONTEXT_DEFAULT_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_DIR_BACKGROUND="$LCARS_COLORS[rose]"
-    POWERLEVEL9K_DIR_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_VCS_CLEAN_BACKGROUND="$LCARS_COLORS[lilac]"
-    POWERLEVEL9K_VCS_CLEAN_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_VCS_MODIFIED_BACKGROUND="$LCARS_COLORS[tan]"
-    POWERLEVEL9K_VCS_MODIFIED_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND="$LCARS_COLORS[lilac]"
-    POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_LCARS_DATE_BACKGROUND="$LCARS_COLORS[pumpkin]"
-    POWERLEVEL9K_LCARS_DATE_FOREGROUND="$LCARS_COLORS[black]"
-    POWERLEVEL9K_LCARS_ERR_BACKGROUND="$LCARS_COLORS[alert]"
-    POWERLEVEL9K_LCARS_ERR_FOREGROUND="$LCARS_COLORS[cream]"
-    POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND="$LCARS_COLORS[sky]"
-    POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND="$LCARS_COLORS[black]"
+    _LCARS_PILL_BG=(
+        hostid  "$LCARS_COLORS[sky]"     dirid   "$LCARS_COLORS[peach]"
+        date    "$LCARS_COLORS[pumpkin]" err     "$LCARS_COLORS[alert]"
+        context "$LCARS_COLORS[lilac]"   dir     "$LCARS_COLORS[rose]"
+        cmdtime "$LCARS_COLORS[sky]"     vcs     "$LCARS_COLORS[lilac]"
+    )
+    _LCARS_PILL_FG=(
+        hostid  "$LCARS_COLORS[black]"   dirid   "$LCARS_COLORS[black]"
+        date    "$LCARS_COLORS[black]"   err     "$LCARS_COLORS[cream]"
+        context "$LCARS_COLORS[black]"   dir     "$LCARS_COLORS[black]"
+        cmdtime "$LCARS_COLORS[black]"   vcs     "$LCARS_COLORS[black]"
+    )
 }
 
 _lcars_apply_redalert_palette() {
-    # Every segment's background goes coffee for "Red Alert" mode. Coffee is
-    # dark so foreground switches to cream for legibility.
-    local seg
-    for seg in LCARS_HOSTID LCARS_DIRID CONTEXT_DEFAULT CONTEXT_SUDO \
-               DIR VCS_CLEAN VCS_MODIFIED VCS_UNTRACKED \
-               LCARS_DATE LCARS_ERR COMMAND_EXECUTION_TIME; do
-        eval "POWERLEVEL9K_${seg}_BACKGROUND=\"$LCARS_COLORS[alert]\""
-        eval "POWERLEVEL9K_${seg}_FOREGROUND=\"$LCARS_COLORS[cream]\""
+    # Every pill goes coffee with cream text. (vcs follows via
+    # _LCARS_REDALERT_ACTIVE inside _lcars_vcs_format.)
+    local k
+    for k in hostid dirid date err context dir cmdtime vcs; do
+        _LCARS_PILL_BG[$k]="$LCARS_COLORS[alert]"
+        _LCARS_PILL_FG[$k]="$LCARS_COLORS[cream]"
     done
 }
