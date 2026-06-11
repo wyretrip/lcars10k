@@ -84,8 +84,10 @@ function _p9k_init_locale() {
 #
 # Static prompt configuration (palette, separators, segment layout, vcs
 # formatter) lives in config/p10k.zsh, installed as ~/.p10k.zsh by
-# scripts/setup.sh. p10k loads that during its own init above, so by the time
-# we get here every POWERLEVEL9K_* var is already set.
+# scripts/setup.sh. p10k does NOT auto-source that file, so we load it here
+# before the behavior modules run — by which point every POWERLEVEL9K_* var
+# is set. Loading it also defines enough POWERLEVEL9K_* options to keep the
+# p10k configuration wizard from launching.
 #
 # This block sources the runtime behavior modules:
 #   - lcars-segments.zsh: defines prompt_lcars_* segment functions
@@ -95,6 +97,11 @@ function _p9k_init_locale() {
 #   - lcars-sounds.zsh:   sound hooks (precmd/preexec)
 
 typeset -g _LCARS_ROOT="${${(%):-%x}:A:h}"
+
+# Load the static prompt config (POWERLEVEL9K_* layout/palette/segment order).
+# Stock p10k sources this from ~/.zshrc; lcars10k keeps ~/.zshrc to a single
+# source line, so the theme loads it itself.
+[[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 
 # Segments must be defined before the first prompt render
 source "$_LCARS_ROOT/lib/lcars-segments.zsh"
