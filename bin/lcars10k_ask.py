@@ -48,3 +48,43 @@ def load_palette(env=None):
         name: env.get(f"LCARS_C_{name.upper()}", default)
         for name, default in _DEFAULT_PALETTE.items()
     }
+
+
+def iter_events(lines):
+    """Yield semantic events from a claude stream-json line iterator.
+
+    Yields:
+      ("model", str)
+      ("delta", str)
+      ("done", {"is_error": bool, "duration_ms": int|None, "cost": float|None})
+    All other line types, malformed JSON, and blank lines are ignored.
+    """
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(obj, dict):
+            continue
+        kind = obj.get("type")
+        if kind == "system" and obj.get("subtype") == "init":
+            model = obj.get("model")
+            if model:
+                yield ("model", model)
+        elif kind == "stream_event":
+            event = obj.get("event") or {}
+            if event.get("type") == "content_block_delta":
+                delta = event.get("delta") or {}
+                if delta.get("type") == "text_delta":
+                    text = delta.get("text", "")
+                    if text:
+                        yield ("delta", text)
+        elif kind == "result":
+            yield ("done", {
+                "is_error": bool(obj.get("is_error")),
+                "duration_ms": obj.get("duration_ms"),
+                "cost": obj.get("total_cost_usd"),
+            })

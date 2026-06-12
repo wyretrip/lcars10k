@@ -28,5 +28,58 @@ class PaletteTests(unittest.TestCase):
         self.assertEqual(pal["sky"], "#A2A8F0")  # untouched default
 
 
+# A representative slice of a real `claude -p --output-format stream-json
+# --include-partial-messages --verbose` run, plus noise that must be ignored.
+SUCCESS_STREAM = [
+    '{"type":"system","subtype":"hook_started","hook_name":"SessionStart"}',
+    '{"type":"system","subtype":"init","model":"claude-opus-4-8","session_id":"x"}',
+    '{"type":"stream_event","event":{"type":"message_start","message":{}}}',
+    '{"type":"stream_event","event":{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}}',
+    '{"type":"stream_event","event":{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello"}}}',
+    '{"type":"stream_event","event":{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":" there"}}}',
+    'not json at all',
+    '',
+    '{"type":"rate_limit_event","rate_limit_info":{"status":"allowed"}}',
+    '{"type":"stream_event","event":{"type":"content_block_stop","index":0}}',
+    '{"type":"result","subtype":"success","is_error":false,"result":"Hello there","duration_ms":2754,"total_cost_usd":0.0745}',
+]
+
+ERROR_STREAM = [
+    '{"type":"system","subtype":"init","model":"claude-opus-4-8"}',
+    '{"type":"result","subtype":"error_during_execution","is_error":true,"duration_ms":120,"total_cost_usd":0.0}',
+]
+
+
+class ParserTests(unittest.TestCase):
+    def _events(self, lines):
+        return list(engine.iter_events(iter(lines)))
+
+    def test_model_captured(self):
+        events = self._events(SUCCESS_STREAM)
+        self.assertIn(("model", "claude-opus-4-8"), events)
+
+    def test_text_deltas_only(self):
+        deltas = [p for k, p in self._events(SUCCESS_STREAM) if k == "delta"]
+        self.assertEqual("".join(deltas), "Hello there")
+
+    def test_noise_ignored(self):
+        # message_start/stop, content_block_start/stop, rate_limit, malformed,
+        # and blank lines must never surface as events.
+        kinds = [k for k, _ in self._events(SUCCESS_STREAM)]
+        self.assertEqual(kinds.count("delta"), 2)
+        self.assertEqual(kinds.count("model"), 1)
+        self.assertEqual(kinds.count("done"), 1)
+
+    def test_done_success(self):
+        done = [p for k, p in self._events(SUCCESS_STREAM) if k == "done"][0]
+        self.assertFalse(done["is_error"])
+        self.assertEqual(done["duration_ms"], 2754)
+        self.assertAlmostEqual(done["cost"], 0.0745)
+
+    def test_done_error(self):
+        done = [p for k, p in self._events(ERROR_STREAM) if k == "done"][0]
+        self.assertTrue(done["is_error"])
+
+
 if __name__ == "__main__":
     unittest.main()
