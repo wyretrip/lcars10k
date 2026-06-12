@@ -136,19 +136,20 @@ def render_header(palette, status, elapsed, frame):
             f"{s}{dots}{RESET} {p}{elapsed:4.1f}s {_rule(plain)}{RESET}")
 
 
-def render_footer(palette, is_error, elapsed, cost):
+def render_footer(palette, is_error, elapsed, cost, model=None):
     """Final status line."""
     cost_s = f"${cost:.4f}" if isinstance(cost, (int, float)) else "—"
+    model_s = f" ▐ {model}" if model else ""
     if is_error:
         status = "⚠ ALERT"
         label = f"{bg(palette['alert'])}{fg(palette['cream'])} {status} {RESET}"
     else:
         status = "COMPLETE"
         label = f"{fg(palette['pumpkin'])}▐ {status} ▐{RESET}"
-    plain = f"▌ LCARS 10K ▐███▐ {status} ▐ {elapsed:.1f}s ▐ {cost_s} "
+    plain = f"▌ LCARS 10K ▐███▐ {status} ▐ {elapsed:.1f}s ▐ {cost_s}{model_s} "
     p = fg(palette["pumpkin"])
     return (f"{p}▌ LCARS 10K ▐███▐{RESET} {label} "
-            f"{p}{elapsed:.1f}s ▐ {cost_s} {_rule(plain)}{RESET}")
+            f"{p}{elapsed:.1f}s ▐ {cost_s}{model_s} {_rule(plain)}{RESET}")
 
 
 class Animator(threading.Thread):
@@ -164,8 +165,9 @@ class Animator(threading.Thread):
     def run(self):
         while not self._stop.is_set():
             elapsed = time.time() - self.start_time
+            label = self.status if elapsed < 1.2 else "WORKING"
             sys.stdout.write(
-                "\r\033[K" + render_header(self.palette, self.status,
+                "\r\033[K" + render_header(self.palette, label,
                                            elapsed, self._frame))
             sys.stdout.flush()
             self._frame += 1
@@ -184,10 +186,13 @@ def run_tty(proc, palette):
     anim.start()
     is_error = False
     cost = None
+    model = None
     streaming = False
     try:
         for kind, payload in iter_events(proc.stdout):
-            if kind == "delta":
+            if kind == "model":
+                model = payload
+            elif kind == "delta":
                 if not streaming:
                     anim.stop()
                     anim.join()
@@ -208,7 +213,7 @@ def run_tty(proc, palette):
             anim.join()
         sys.stdout.write("\n" if streaming else "\r\033[K")
         elapsed = time.time() - start
-        sys.stdout.write(render_footer(palette, is_error, elapsed, cost) + "\n")
+        sys.stdout.write(render_footer(palette, is_error, elapsed, cost, model) + "\n")
         sys.stdout.write("\033[?25h")  # restore cursor
         sys.stdout.flush()
     return 1 if is_error else 0
@@ -234,7 +239,22 @@ def main(argv):
 
     # Audio hook: a future version could afplay $LCARS_SOUND_* here / on done.
 
+    # Drain stderr on a background thread so a large stderr burst can never
+    # deadlock against the stdout pipe we're reading.
+    stderr_chunks = []
+
+    def _drain_stderr():
+        try:
+            for line in proc.stderr:
+                stderr_chunks.append(line)
+        except (ValueError, OSError):
+            pass
+    stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+    stderr_thread.start()
+
     def _on_sigint(_signum, _frame):
+        sys.stdout.write("\033[?25h\033[0m")  # restore cursor + reset colors
+        sys.stdout.flush()
         proc.terminate()
     signal.signal(signal.SIGINT, _on_sigint)
 
@@ -242,10 +262,15 @@ def main(argv):
         rc = run_tty(proc, palette)
     else:
         rc = render_plain(iter_events(proc.stdout), sys.stdout)
-    proc.wait()
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+    stderr_thread.join(timeout=1)
     if rc == 0 and proc.returncode:
         # Surface a subprocess failure that produced no result event.
-        err = (proc.stderr.read() or "").strip()
+        err = "".join(stderr_chunks).strip()
         if err:
             sys.stderr.write(err + "\n")
         rc = proc.returncode
