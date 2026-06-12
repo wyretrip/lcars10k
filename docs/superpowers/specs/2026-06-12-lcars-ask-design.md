@@ -76,10 +76,10 @@ Responsibilities:
   `LCARS_C_PEACH`, `LCARS_C_LILAC`, `LCARS_C_SKY`, `LCARS_C_ALERT`,
   `LCARS_C_CREAM`. If `LCARS_COLORS` is unset (suite not loaded), skip — the
   engine has built-in fallbacks.
-- Invoke the engine: `python3 "${_LCARS_ROOT:-$HOME/.lcars10k}/bin/lcars10k-ask.py" "$prompt"`
+- Invoke the engine: `python3 "${_LCARS_ROOT:-$HOME/.lcars10k}/bin/lcars10k_ask.py" "$prompt"`
   and propagate its exit code.
 
-### Component 2 — `bin/lcars10k-ask.py`
+### Component 2 — `bin/lcars10k_ask.py`
 
 The engine. New `bin/` directory in the repo. Pure stdlib Python 3 (ships with
 macOS); no third-party deps.
@@ -197,7 +197,7 @@ All other line types are noise and ignored: `hook_started`/`hook_response`/
 ## Git
 
 Commit only the new and changed files into the `~/.lcars10k` repo:
-`lib/lcars-ask.zsh`, `bin/lcars10k-ask.py`, `bin/test_ask_parser.py`,
+`lib/lcars-ask.zsh`, `bin/lcars10k_ask.py`, `bin/test_ask_parser.py`,
 `tests/test_ask.zsh`, the `lib/lcars-cli.zsh` help edit, the `run-tests.zsh`
 registration, and this spec. Leave any pre-existing uncommitted change in the
 repo untouched.
