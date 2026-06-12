@@ -88,3 +88,17 @@ def iter_events(lines):
                 "duration_ms": obj.get("duration_ms"),
                 "cost": obj.get("total_cost_usd"),
             })
+
+
+def render_plain(events, out):
+    """Non-TTY path: stream answer text only. Returns exit code (0 ok, 1 err)."""
+    is_error = False
+    for kind, payload in events:
+        if kind == "delta":
+            out.write(payload)
+            out.flush()
+        elif kind == "done":
+            is_error = payload["is_error"]
+    out.write("\n")
+    out.flush()
+    return 1 if is_error else 0

@@ -83,5 +83,18 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(done["cost"], 0.0)
 
 
+class PlainRenderTests(unittest.TestCase):
+    def test_streams_text_and_trailing_newline(self):
+        out = io.StringIO()
+        code = engine.render_plain(engine.iter_events(iter(SUCCESS_STREAM)), out)
+        self.assertEqual(out.getvalue(), "Hello there\n")
+        self.assertEqual(code, 0)
+
+    def test_error_result_sets_exit_code(self):
+        out = io.StringIO()
+        code = engine.render_plain(engine.iter_events(iter(ERROR_STREAM)), out)
+        self.assertEqual(code, 1)
+
+
 if __name__ == "__main__":
     unittest.main()
