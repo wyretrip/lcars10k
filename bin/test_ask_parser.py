@@ -79,6 +79,8 @@ class ParserTests(unittest.TestCase):
     def test_done_error(self):
         done = [p for k, p in self._events(ERROR_STREAM) if k == "done"][0]
         self.assertTrue(done["is_error"])
+        self.assertEqual(done["duration_ms"], 120)
+        self.assertEqual(done["cost"], 0.0)
 
 
 if __name__ == "__main__":
