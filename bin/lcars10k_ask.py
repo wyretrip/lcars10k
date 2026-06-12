@@ -185,6 +185,7 @@ def run_tty(proc, palette):
     anim = Animator(palette, start)
     anim.start()
     is_error = False
+    got_result = False
     cost = None
     model = None
     streaming = False
@@ -205,6 +206,7 @@ def run_tty(proc, palette):
                 sys.stdout.write(payload.replace("\n", "\n  "))
                 sys.stdout.flush()
             elif kind == "done":
+                got_result = True
                 is_error = payload["is_error"]
                 cost = payload["cost"]
     finally:
@@ -213,10 +215,13 @@ def run_tty(proc, palette):
             anim.join()
         sys.stdout.write("\n" if streaming else "\r\033[K")
         elapsed = time.time() - start
-        sys.stdout.write(render_footer(palette, is_error, elapsed, cost, model) + "\n")
+        # No result event means the run was interrupted (Ctrl-C) or the
+        # subprocess died early — never report COMPLETE in that case.
+        failed = is_error or not got_result
+        sys.stdout.write(render_footer(palette, failed, elapsed, cost, model) + "\n")
         sys.stdout.write("\033[?25h")  # restore cursor
         sys.stdout.flush()
-    return 1 if is_error else 0
+    return 1 if failed else 0
 
 
 def main(argv):
@@ -258,23 +263,28 @@ def main(argv):
         proc.terminate()
     signal.signal(signal.SIGINT, _on_sigint)
 
-    if sys.stdout.isatty():
-        rc = run_tty(proc, palette)
-    else:
-        rc = render_plain(iter_events(proc.stdout), sys.stdout)
     try:
-        proc.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.wait()
-    stderr_thread.join(timeout=1)
-    if rc == 0 and proc.returncode:
-        # Surface a subprocess failure that produced no result event.
-        err = "".join(stderr_chunks).strip()
-        if err:
-            sys.stderr.write(err + "\n")
-        rc = proc.returncode
-    return rc
+        if sys.stdout.isatty():
+            rc = run_tty(proc, palette)
+        else:
+            rc = render_plain(iter_events(proc.stdout), sys.stdout)
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+        stderr_thread.join(timeout=1)
+        if rc == 0 and proc.returncode:
+            # Surface a subprocess failure that produced no result event.
+            err = "".join(stderr_chunks).strip()
+            if err:
+                sys.stderr.write(err + "\n")
+            rc = proc.returncode
+        return rc
+    finally:
+        if sys.stdout.isatty():
+            sys.stdout.write("\033[?25h\033[0m")  # ensure cursor + colors restored
+            sys.stdout.flush()
 
 
 if __name__ == "__main__":
