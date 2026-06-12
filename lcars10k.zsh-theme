@@ -112,4 +112,7 @@ source "$_LCARS_ROOT/lib/lcars-sounds.zsh"
 
 # User-facing CLI: lcars10k {setup,reload,quiet,loud,redalert,version,help}
 source "$_LCARS_ROOT/lib/lcars-cli.zsh"
+
+# `lcars <prompt…>` — ask Claude with an animated LCARS readout
+source "$_LCARS_ROOT/lib/lcars-ask.zsh"
 'builtin' 'unset' '__p9k_src_opts'
