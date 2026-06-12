@@ -117,3 +117,140 @@ def render_plain(events, out):
     out.write("\n")
     out.flush()
     return 1 if is_error else 0
+
+
+def _rule(plain_prefix):
+    cols = shutil.get_terminal_size((80, 24)).columns
+    return "─" * max(0, cols - len(plain_prefix) - 1)
+
+
+def render_header(palette, status, elapsed, frame):
+    """One-line animated LCARS header (no trailing newline)."""
+    block = "███" if frame % 2 == 0 else "▓▓▓"
+    n = 8
+    pos = frame % n
+    dots = "".join("●" if i <= pos else "○" for i in range(n))
+    plain = f"▌ LCARS 10K ▐{block}▐ {status:<13} {dots} {elapsed:4.1f}s "
+    p, l, s = fg(palette["pumpkin"]), fg(palette["lilac"]), fg(palette["sky"])
+    return (f"{p}▌ LCARS 10K ▐{block}▐{RESET} {l}{status:<13}{RESET} "
+            f"{s}{dots}{RESET} {p}{elapsed:4.1f}s {_rule(plain)}{RESET}")
+
+
+def render_footer(palette, is_error, elapsed, cost):
+    """Final status line."""
+    cost_s = f"${cost:.4f}" if isinstance(cost, (int, float)) else "—"
+    if is_error:
+        status = "⚠ ALERT"
+        label = f"{bg(palette['alert'])}{fg(palette['cream'])} {status} {RESET}"
+    else:
+        status = "COMPLETE"
+        label = f"{fg(palette['pumpkin'])}▐ {status} ▐{RESET}"
+    plain = f"▌ LCARS 10K ▐███▐ {status} ▐ {elapsed:.1f}s ▐ {cost_s} "
+    p = fg(palette["pumpkin"])
+    return (f"{p}▌ LCARS 10K ▐███▐{RESET} {label} "
+            f"{p}{elapsed:.1f}s ▐ {cost_s} {_rule(plain)}{RESET}")
+
+
+class Animator(threading.Thread):
+    """Repaints the header line in place until stopped (waiting phase only)."""
+    def __init__(self, palette, start_time, status="ACCESSING CORE"):
+        super().__init__(daemon=True)
+        self.palette = palette
+        self.start_time = start_time
+        self.status = status
+        self._stop = threading.Event()
+        self._frame = 0
+
+    def run(self):
+        while not self._stop.is_set():
+            elapsed = time.time() - self.start_time
+            sys.stdout.write(
+                "\r\033[K" + render_header(self.palette, self.status,
+                                           elapsed, self._frame))
+            sys.stdout.flush()
+            self._frame += 1
+            self._stop.wait(0.1)
+
+    def stop(self):
+        self._stop.set()
+
+
+def run_tty(proc, palette):
+    """Animate while waiting, then freeze header and stream the answer."""
+    start = time.time()
+    sys.stdout.write("\033[?25l")  # hide cursor
+    sys.stdout.flush()
+    anim = Animator(palette, start)
+    anim.start()
+    is_error = False
+    cost = None
+    streaming = False
+    try:
+        for kind, payload in iter_events(proc.stdout):
+            if kind == "delta":
+                if not streaming:
+                    anim.stop()
+                    anim.join()
+                    elapsed = time.time() - start
+                    sys.stdout.write(
+                        "\r\033[K"
+                        + render_header(palette, "RECEIVING", elapsed, 0)
+                        + "\n  ")
+                    streaming = True
+                sys.stdout.write(payload.replace("\n", "\n  "))
+                sys.stdout.flush()
+            elif kind == "done":
+                is_error = payload["is_error"]
+                cost = payload["cost"]
+    finally:
+        if anim.is_alive():
+            anim.stop()
+            anim.join()
+        sys.stdout.write("\n" if streaming else "\r\033[K")
+        elapsed = time.time() - start
+        sys.stdout.write(render_footer(palette, is_error, elapsed, cost) + "\n")
+        sys.stdout.write("\033[?25h")  # restore cursor
+        sys.stdout.flush()
+    return 1 if is_error else 0
+
+
+def main(argv):
+    if len(argv) < 2 or not argv[1].strip():
+        sys.stderr.write("usage: lcars <prompt…>\n")
+        return 2
+    prompt = argv[1]
+    palette = load_palette()
+    cmd = ["claude", "-p", prompt, "--output-format", "stream-json",
+           "--include-partial-messages", "--verbose"]
+    try:
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, bufsize=1)
+    except FileNotFoundError:
+        if sys.stdout.isatty():
+            sys.stdout.write(render_footer(palette, True, 0.0, None) + "\n")
+        sys.stderr.write("lcars: `claude` not found on PATH\n")
+        return 127
+
+    # Audio hook: a future version could afplay $LCARS_SOUND_* here / on done.
+
+    def _on_sigint(_signum, _frame):
+        proc.terminate()
+    signal.signal(signal.SIGINT, _on_sigint)
+
+    if sys.stdout.isatty():
+        rc = run_tty(proc, palette)
+    else:
+        rc = render_plain(iter_events(proc.stdout), sys.stdout)
+    proc.wait()
+    if rc == 0 and proc.returncode:
+        # Surface a subprocess failure that produced no result event.
+        err = (proc.stderr.read() or "").strip()
+        if err:
+            sys.stderr.write(err + "\n")
+        rc = proc.returncode
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
