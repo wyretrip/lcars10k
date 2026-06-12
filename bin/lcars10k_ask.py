@@ -136,9 +136,8 @@ def render_header(palette, status, elapsed, frame):
             f"{s}{dots}{RESET} {p}{elapsed:4.1f}s {_rule(plain)}{RESET}")
 
 
-def render_footer(palette, is_error, elapsed, cost, model=None):
+def render_footer(palette, is_error, elapsed, model=None):
     """Final status line."""
-    cost_s = f"${cost:.4f}" if isinstance(cost, (int, float)) else "—"
     model_s = f" ▐ {model}" if model else ""
     if is_error:
         status = "⚠ ALERT"
@@ -146,10 +145,10 @@ def render_footer(palette, is_error, elapsed, cost, model=None):
     else:
         status = "COMPLETE"
         label = f"{fg(palette['pumpkin'])}▐ {status} ▐{RESET}"
-    plain = f"▌ LCARS 10K ▐███▐ {status} ▐ {elapsed:.1f}s ▐ {cost_s}{model_s} "
+    plain = f"▌ LCARS 10K ▐███▐ {status} ▐ {elapsed:.1f}s{model_s} "
     p = fg(palette["pumpkin"])
     return (f"{p}▌ LCARS 10K ▐███▐{RESET} {label} "
-            f"{p}{elapsed:.1f}s ▐ {cost_s}{model_s} {_rule(plain)}{RESET}")
+            f"{p}{elapsed:.1f}s{model_s} {_rule(plain)}{RESET}")
 
 
 class Animator(threading.Thread):
@@ -186,7 +185,6 @@ def run_tty(proc, palette):
     anim.start()
     is_error = False
     got_result = False
-    cost = None
     model = None
     streaming = False
     try:
@@ -208,7 +206,6 @@ def run_tty(proc, palette):
             elif kind == "done":
                 got_result = True
                 is_error = payload["is_error"]
-                cost = payload["cost"]
     finally:
         if anim.is_alive():
             anim.stop()
@@ -218,7 +215,7 @@ def run_tty(proc, palette):
         # No result event means the run was interrupted (Ctrl-C) or the
         # subprocess died early — never report COMPLETE in that case.
         failed = is_error or not got_result
-        sys.stdout.write(render_footer(palette, failed, elapsed, cost, model) + "\n")
+        sys.stdout.write(render_footer(palette, failed, elapsed, model) + "\n")
         sys.stdout.write("\033[?25h")  # restore cursor
         sys.stdout.flush()
     return 1 if failed else 0
@@ -238,7 +235,7 @@ def main(argv):
             text=True, bufsize=1)
     except FileNotFoundError:
         if sys.stdout.isatty():
-            sys.stdout.write(render_footer(palette, True, 0.0, None) + "\n")
+            sys.stdout.write(render_footer(palette, True, 0.0) + "\n")
         sys.stderr.write("lcars: `claude` not found on PATH\n")
         return 127
 
