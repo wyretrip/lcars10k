@@ -42,12 +42,27 @@ def bg(hexstr):
     return f"\033[48;2;{r};{g};{b}m"
 
 
+def _valid_hex(value):
+    """True if value is a #RRGGBB / RRGGBB hex color string."""
+    if not isinstance(value, str):
+        return False
+    h = value.lstrip("#")
+    if len(h) != 6:
+        return False
+    try:
+        int(h, 16)
+    except ValueError:
+        return False
+    return True
+
+
 def load_palette(env=None):
     env = os.environ if env is None else env
-    return {
-        name: env.get(f"LCARS_C_{name.upper()}", default)
-        for name, default in _DEFAULT_PALETTE.items()
-    }
+    out = {}
+    for name, default in _DEFAULT_PALETTE.items():
+        value = env.get(f"LCARS_C_{name.upper()}", default)
+        out[name] = value if _valid_hex(value) else default
+    return out
 
 
 def iter_events(lines):

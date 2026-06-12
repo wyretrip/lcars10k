@@ -27,6 +27,15 @@ class PaletteTests(unittest.TestCase):
         self.assertEqual(pal["pumpkin"], "#112233")
         self.assertEqual(pal["sky"], "#A2A8F0")  # untouched default
 
+    def test_bg_sequence(self):
+        self.assertEqual(engine.bg("#000000"), "\033[48;2;0;0;0m")
+
+    def test_load_palette_rejects_malformed(self):
+        # A bad LCARS_C_* value must fall back to the built-in default,
+        # so fg()/bg() never receive un-parseable input at runtime.
+        pal = engine.load_palette(env={"LCARS_C_PUMPKIN": "not-a-color"})
+        self.assertEqual(pal["pumpkin"], "#F5B86E")
+
 
 # A representative slice of a real `claude -p --output-format stream-json
 # --include-partial-messages --verbose` run, plus noise that must be ignored.
@@ -94,6 +103,7 @@ class PlainRenderTests(unittest.TestCase):
         out = io.StringIO()
         code = engine.render_plain(engine.iter_events(iter(ERROR_STREAM)), out)
         self.assertEqual(code, 1)
+        self.assertEqual(out.getvalue(), "\n")  # trailing newline only, no text
 
 
 if __name__ == "__main__":
