@@ -1,3 +1,4 @@
 *.zwc
 sounds/*.wav
 sounds/*.mp3
+__pycache__/
