@@ -15,6 +15,7 @@ A Star Trek LCARS-themed Zsh prompt, hard-forked from
 - **Right prompt** with real-date, exit code (`ERR XX`), and command duration.
 - **Red Alert mode** — palette flips alert-red on three consecutive failures, or on demand via `lcars10k redalert on`.
 - **Optional TNG sounds** — startup chime, success chirp, failure warble, long-command-done beep. Loudness-matched, off by default.
+- **Ask Claude inline** — `lcars <prompt>` streams an answer from the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) into an animated LCARS readout, wrapped and bulleted in your live palette. See [Ask Claude](#ask-claude).
 - **Font bundle** — `MesloLGS NF LCARS` (Meslo patched with the Starfleet delta) and stock `MesloLGS NF` for the terminal, Antonio for system display. (Federation / LCARSGTJ3 require manual install — see below.)
 
 ## Requirements
@@ -23,6 +24,7 @@ A Star Trek LCARS-themed Zsh prompt, hard-forked from
 - Zsh ≥ 5.8
 - A Nerd Font in your terminal (MesloLGS NF is bundled and recommended)
 - Optional: Homebrew + `sox` for sound normalisation
+- Optional: the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) on your `PATH` for the `lcars` ask command
 
 ## Install
 
@@ -95,6 +97,7 @@ Everything runs through the `lcars10k` dispatcher:
 | Command | Does |
 |---|---|
 | `lcars10k setup` | Run the installer (accepts the flags shown under [Install](#install)) |
+| `lcars10k uninstall` | Reverse the installer (unwire `~/.zshrc`, remove configs, fonts, terminal profile). Accepts `--dry-run` / `--yes` |
 | `lcars10k reload` | Reload the prompt after editing `~/.p10k.zsh` or `~/.lcars10krc` |
 | `lcars10k quiet` / `loud` | Silence / re-enable sounds for the current session |
 | `lcars10k redalert on` / `off` / `auto` | Manual control of Red Alert mode |
@@ -102,6 +105,23 @@ Everything runs through the `lcars10k` dispatcher:
 | `lcars10k help` | Show help |
 
 The bare functions `lcars-quiet`, `lcars-loud`, and `lcars-redalert on|off|auto` remain available as shortcuts.
+
+## Ask Claude
+
+`lcars <prompt>` asks Claude straight from the command line and renders the reply as an
+LCARS readout — an animated `ACCESSING CORE` / `WORKING` header while it thinks, the answer
+streamed in, then a `COMPLETE` (or `⚠ ALERT`) footer.
+
+```sh
+lcars why is the warp core the heart of a starship
+lcars "explain git rebase in three bullet points"
+```
+
+It shells out to the [`claude` CLI](https://docs.claude.com/en/docs/claude-code), so install
+that and keep it on your `PATH`. The answer is word-wrapped to a comfortable width with a
+hanging indent, blank lines between paragraphs, and `◈` bullets — all drawn in your live
+LCARS palette (Red Alert included). Piped or redirected output (`lcars … | cat`) stays plain
+text, so it's still safe to script with.
 
 ## Heritage
 
