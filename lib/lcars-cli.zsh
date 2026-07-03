@@ -29,6 +29,10 @@ COMMANDS
   version          Print version info.
   help             Show this message.
 
+RELATED COMMANDS
+  lcars <prompt…>  Ask Claude from the command line with an animated LCARS
+                   readout. (Defined in lib/lcars-ask.zsh.)
+
 PERSISTENT CONFIG
   ~/.lcars10krc                  Env-var-level options (sounds, thresholds).
   \$LCARS_HOME/config/p10k.zsh    Prompt structure, palette, segments.
