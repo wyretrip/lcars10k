@@ -65,10 +65,14 @@ calls `sys.stdout` itself — it returns strings — which keeps it testable.
   line ever starts at column 0.
 - **Word boundaries.** Break only at whitespace. A word longer than the measure
   (rare — a URL) is emitted whole rather than hard-split mid-token.
-- **Paragraphs.** A blank line from Claude (`\n\n`) is preserved as one blank line
-  — a breath between ideas. Single `\n` inside a paragraph is treated as a soft
-  break and reflowed into the wrapped stream (Claude's mid-sentence hard wraps
-  should not fossilize into short lines).
+- **Line breaks.** Every `\n` from Claude is a hard line break (the next line
+  re-wraps from its own indent). A run of 2+ newlines collapses to exactly one
+  blank line — a breath between ideas — so Claude's paragraph gaps are preserved
+  without stacking multiple blanks. Leading newlines before any text are dropped
+  (no blank line above the first answer line). This is simpler and more robust
+  than reflowing single `\n`, and matches real `claude -p` output (one long line
+  per paragraph, `\n\n` between blocks, `\n` between list items) — a rule that
+  also keeps `\n`-before-`- item` a clean bullet break rather than a reflow.
 
 **Bullet restyle (the visible LCARS flourish):**
 
@@ -122,8 +126,8 @@ Extend `bin/test_ask_parser.py` (pure-logic, stdlib `unittest`, no live
 - **Streaming safety:** feeding the same text split across arbitrary delta
   boundaries produces the same rendered output as feeding it whole (no word
   torn across a flush).
-- **Paragraphs:** `\n\n` yields exactly one blank line; single `\n` inside a
-  paragraph reflows.
+- **Line breaks:** a single `\n` starts a new wrapped line; `\n\n` (or more)
+  yields exactly one blank line; leading newlines are dropped.
 - **Bullets:** a `- ` line renders the `◈ ` marker and aligns wrapped
   continuation under the body text.
 - **Long word:** a token longer than the measure is emitted unbroken.
