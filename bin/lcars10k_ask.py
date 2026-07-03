@@ -364,14 +364,23 @@ def run_tty(proc, palette):
     return 1 if failed else 0
 
 
+def build_claude_cmd(prompt):
+    """Argv for the `claude -p` streaming run, incl. the LCARS format nudge."""
+    return [
+        "claude", "-p", prompt,
+        "--output-format", "stream-json",
+        "--include-partial-messages", "--verbose",
+        "--append-system-prompt", ASK_SYSTEM_PROMPT,
+    ]
+
+
 def main(argv):
     if len(argv) < 2 or not argv[1].strip():
         sys.stderr.write("usage: lcars <prompt…>\n")
         return 2
     prompt = argv[1]
     palette = load_palette()
-    cmd = ["claude", "-p", prompt, "--output-format", "stream-json",
-           "--include-partial-messages", "--verbose"]
+    cmd = build_claude_cmd(prompt)
     try:
         proc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,

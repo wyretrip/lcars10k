@@ -219,5 +219,20 @@ class AnswerFormatterTests(unittest.TestCase):
         self.assertTrue(first.startswith("  ") and not first.startswith("   "))
 
 
+class BuildCmdTests(unittest.TestCase):
+    def test_includes_stream_json_and_prompt(self):
+        cmd = engine.build_claude_cmd("why is the sky blue")
+        self.assertEqual(cmd[:3], ["claude", "-p", "why is the sky blue"])
+        self.assertIn("--output-format", cmd)
+        self.assertIn("stream-json", cmd)
+
+    def test_appends_system_prompt_nudge(self):
+        cmd = engine.build_claude_cmd("hi")
+        self.assertIn("--append-system-prompt", cmd)
+        idx = cmd.index("--append-system-prompt")
+        self.assertEqual(cmd[idx + 1], engine.ASK_SYSTEM_PROMPT)
+        self.assertIn("bullet", engine.ASK_SYSTEM_PROMPT.lower())
+
+
 if __name__ == "__main__":
     unittest.main()
