@@ -330,6 +330,7 @@ def run_tty(proc, palette):
     got_result = False
     model = None
     streaming = False
+    formatter = AnswerFormatter(palette)
     try:
         for kind, payload in iter_events(proc.stdout):
             if kind == "model":
@@ -342,9 +343,9 @@ def run_tty(proc, palette):
                     sys.stdout.write(
                         "\r\033[K"
                         + render_header(palette, "RECEIVING", elapsed, 0)
-                        + "\n  ")
+                        + "\n")
                     streaming = True
-                sys.stdout.write(payload.replace("\n", "\n  "))
+                sys.stdout.write(formatter.feed(payload))
                 sys.stdout.flush()
             elif kind == "done":
                 got_result = True
@@ -353,7 +354,10 @@ def run_tty(proc, palette):
         if anim.is_alive():
             anim.stop()
             anim.join()
-        sys.stdout.write("\n" if streaming else "\r\033[K")
+        if streaming:
+            sys.stdout.write(formatter.flush() + "\n")
+        else:
+            sys.stdout.write("\r\033[K")
         elapsed = time.time() - start
         # No result event means the run was interrupted (Ctrl-C) or the
         # subprocess died early — never report COMPLETE in that case.
