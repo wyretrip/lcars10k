@@ -6,6 +6,7 @@ Pure stdlib. Invoked by lib/lcars-ask.zsh as:
 """
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -63,6 +64,144 @@ def load_palette(env=None):
         value = env.get(f"LCARS_C_{name.upper()}", default)
         out[name] = value if _valid_hex(value) else default
     return out
+
+
+ASK_SYSTEM_PROMPT = (
+    "Answer concisely for a terminal readout. Prefer short paragraphs. "
+    "Use simple \"- \" bullet lists for enumerations. Avoid markdown tables, "
+    "headers, and code fences unless explicitly asked. Do not add preamble or "
+    "sign-off."
+)
+
+_WS_RUN = re.compile(r"[ \t]+")
+_WORD_RUN = re.compile(r"[^\s]+")
+
+
+class AnswerFormatter:
+    """Streaming word-wrapper for the TTY answer path.
+
+    feed(delta) takes a raw text chunk and returns colored, wrapped text that is
+    safe to emit now. Only whitespace-terminated words are emitted; a trailing
+    partial word is held so it is never torn across a wrap. flush() returns the
+    remainder at end of stream. Never writes to stdout itself, so it is unit
+    testable. Emitted lines carry their own indent; visible width (excluding the
+    ANSI-colored bullet marker) never exceeds the measure.
+    """
+
+    BULLET = "◈"  # ◈
+
+    def __init__(self, palette, cols=None):
+        if cols is None:
+            cols = shutil.get_terminal_size((80, 24)).columns
+        self.width = max(20, min(cols - 4, 80))
+        self.palette = palette
+        self._buf = ""
+        self._col = 0             # visible cols used on the current row
+        self._indent_cont = "  "  # continuation indent for the current line
+        self._line_started = False
+        self._sep = False         # a space separator is pending before next word
+        self._skip_next_sep = False  # swallow the space after a bullet marker
+        self._lead_spaces = 0     # leading spaces seen at the current line start
+        self._pending_nl = 0      # consecutive unresolved newlines
+
+    # -- public API ------------------------------------------------------
+    def feed(self, text):
+        self._buf += text
+        return self._drain(final=False)
+
+    def flush(self):
+        return self._drain(final=True)
+
+    # -- internals -------------------------------------------------------
+    def _take_token(self, final):
+        b = self._buf
+        if not b:
+            return None
+        if b[0] == "\n":
+            self._buf = b[1:]
+            return ("nl", "\n")
+        if b[0] in " \t":
+            m = _WS_RUN.match(b)
+            if m.end() == len(b) and not final:
+                return None  # spaces may still be growing
+            self._buf = b[m.end():]
+            return ("sp", b[:m.end()])
+        m = _WORD_RUN.match(b)
+        if m.end() == len(b) and not final:
+            return None  # word may still be growing
+        self._buf = b[m.end():]
+        return ("word", b[:m.end()])
+
+    def _drain(self, final):
+        out = []
+        while True:
+            tok = self._take_token(final)
+            if tok is None:
+                break
+            kind, text = tok
+            if kind == "nl":
+                self._pending_nl += 1
+                continue
+            if self._pending_nl:
+                self._resolve_newlines(out)
+                self._pending_nl = 0
+            if kind == "sp":
+                if not self._line_started:
+                    self._lead_spaces += len(text)
+                elif self._skip_next_sep:
+                    self._skip_next_sep = False
+                else:
+                    self._sep = True
+                continue
+            # kind == "word"
+            if not self._line_started:
+                self._start_line(out, text)
+            else:
+                self._place_word(out, text)
+        return "".join(out)
+
+    def _resolve_newlines(self, out):
+        if self._line_started:
+            out.append("\n")
+            if self._pending_nl >= 2:
+                out.append("\n")  # collapse any run of blanks to one
+            self._col = 0
+            self._sep = False
+            self._skip_next_sep = False
+            self._line_started = False
+            self._lead_spaces = 0
+        # newlines before any content produce no leading blank line
+
+    def _start_line(self, out, word):
+        base = "  " + "  " * (self._lead_spaces // 2)
+        self._lead_spaces = 0
+        if word in ("-", "*"):
+            marker = fg(self.palette["pumpkin"]) + self.BULLET + RESET
+            out.append(base + marker + " ")
+            self._col = len(base) + 2  # visible width of "◈ "
+            self._indent_cont = base + "  "  # align continuation under text
+            self._skip_next_sep = True
+        else:
+            out.append(base + word)
+            self._col = len(base) + len(word)
+            self._indent_cont = base
+        self._line_started = True
+
+    def _place_word(self, out, word):
+        self._skip_next_sep = False
+        wlen = len(word)
+        sep = 1 if self._sep else 0
+        if self._col + sep + wlen > self.width:
+            out.append("\n" + self._indent_cont)
+            self._col = len(self._indent_cont) + wlen
+            out.append(word)
+        else:
+            if sep:
+                out.append(" ")
+                self._col += 1
+            out.append(word)
+            self._col += wlen
+        self._sep = False
 
 
 def iter_events(lines):
