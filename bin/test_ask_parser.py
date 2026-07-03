@@ -134,12 +134,14 @@ class AnswerFormatterTests(unittest.TestCase):
         return _strip(rendered).split("\n")
 
     def test_long_paragraph_wraps_within_measure(self):
-        text = ("word " * 60).strip()  # 60 short words, one paragraph
-        rendered = _render(text, cols=40)
+        cols = 40
+        width = max(20, min(cols - 4, 80))  # 36
+        text = ("word " * 60).strip()
+        rendered = _render(text, cols=cols)
         lines = self._lines(rendered)
         self.assertTrue(len(lines) > 1, "expected multiple wrapped rows")
         for ln in lines:
-            self.assertLessEqual(len(ln), 40, f"line too wide: {ln!r}")
+            self.assertLessEqual(len(ln), width, f"line too wide: {ln!r}")
 
     def test_body_lines_are_indented(self):
         text = ("word " * 60).strip()
@@ -198,6 +200,23 @@ class AnswerFormatterTests(unittest.TestCase):
         # Ordinary answer text carries no color codes (only bullets do).
         raw = _render("just some plain words", cols=40)
         self.assertEqual(raw.count("\033"), 0)
+
+    def test_carriage_return_does_not_crash(self):
+        # CRLF-style content must not abort the stream.
+        rendered = _render("line one\r\nline two", cols=40)
+        self.assertIn("line", _strip(rendered))
+
+    def test_nbsp_treated_as_space(self):
+        # A non-breaking space must be handled as whitespace, not crash.
+        rendered = _render("alpha\xa0beta gamma", cols=40)
+        self.assertIn("alpha", _strip(rendered))
+        self.assertIn("beta", _strip(rendered))
+
+    def test_leading_spaces_on_blank_line_dont_shift_indent(self):
+        # "  \n" (spaces then newline) must not deepen the next line's indent.
+        lines = _strip(_render("  \nHello.", cols=40)).split("\n")
+        first = [ln for ln in lines if ln.strip()][0]
+        self.assertTrue(first.startswith("  ") and not first.startswith("   "))
 
 
 if __name__ == "__main__":

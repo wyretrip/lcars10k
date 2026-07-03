@@ -73,7 +73,7 @@ ASK_SYSTEM_PROMPT = (
     "sign-off."
 )
 
-_WS_RUN = re.compile(r"[ \t]+")
+_WS_RUN = re.compile(r"[^\S\n]+")  # whitespace run excluding newline
 _WORD_RUN = re.compile(r"[^\s]+")
 
 
@@ -88,7 +88,7 @@ class AnswerFormatter:
     ANSI-colored bullet marker) never exceeds the measure.
     """
 
-    BULLET = "◈"  # ◈
+    BULLET = "◈"
 
     def __init__(self, palette, cols=None):
         if cols is None:
@@ -120,7 +120,7 @@ class AnswerFormatter:
         if b[0] == "\n":
             self._buf = b[1:]
             return ("nl", "\n")
-        if b[0] in " \t":
+        if b[0] != "\n" and b[0].isspace():
             m = _WS_RUN.match(b)
             if m.end() == len(b) and not final:
                 return None  # spaces may still be growing
@@ -169,8 +169,10 @@ class AnswerFormatter:
             self._sep = False
             self._skip_next_sep = False
             self._line_started = False
-            self._lead_spaces = 0
-        # newlines before any content produce no leading blank line
+        # newlines before any content produce no leading blank line; reset
+        # lead-space state unconditionally so spaces on a blank line can't
+        # deepen the next line's indent
+        self._lead_spaces = 0
 
     def _start_line(self, out, word):
         base = "  " + "  " * (self._lead_spaces // 2)
@@ -189,6 +191,8 @@ class AnswerFormatter:
 
     def _place_word(self, out, word):
         self._skip_next_sep = False
+        # len(word) assumes single-width (narrow) characters; wide/CJK glyphs
+        # would under-count and could over-run the measure.
         wlen = len(word)
         sep = 1 if self._sep else 0
         if self._col + sep + wlen > self.width:
