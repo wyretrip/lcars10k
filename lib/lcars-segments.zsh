@@ -1,13 +1,29 @@
 # lib/lcars-segments.zsh — custom LCARS-flavored prompt segments.
 # p10k calls prompt_<name> to render the <name> segment.
 
+# _lcars_md5_hex <input>
+# Portable MD5 hex digest. macOS ships `md5` (digest on stdout); most Linux
+# distros ship `md5sum` (digest is the first field). Fall back to `cksum` so
+# the IDs still render on minimal systems that have neither.
+_lcars_md5_hex() {
+    local input="$1"
+    if (( $+commands[md5sum] )); then
+        printf '%s' "$input" | md5sum | cut -d' ' -f1
+    elif (( $+commands[md5] )); then
+        printf '%s' "$input" | md5
+    else
+        # cksum is POSIX; emit its checksum as hex so downstream digit-mapping works.
+        printf '%x' "$(printf '%s' "$input" | cksum | cut -d' ' -f1)"
+    fi
+}
+
 # _lcars_hash_to_digits <input> <length>
 # Deterministic numeric ID derived from input. Output is exactly <length> digits.
 _lcars_hash_to_digits() {
     local input="$1" length="$2"
     # md5 -> hex -> keep only digits -> pad with the hex chars converted to mod-10
     local hex
-    hex=$(printf '%s' "$input" | md5)
+    hex=$(_lcars_md5_hex "$input")
     # Build a long digit-only string: digits from hex first, then map a-f → 0-5
     local digits=""
     local i ch

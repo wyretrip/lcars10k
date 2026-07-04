@@ -3,9 +3,10 @@
 #
 # Produces a "MesloLGS NF LCARS" TTF that contains everything the original
 # MesloLGS NF has, PLUS the 55 Trekbats glyphs mapped at U+E100..U+E136.
-# Install the output into ~/Library/Fonts (or run install-fonts.sh after
-# copying it under fonts/MesloLGS-NF-LCARS/), set your terminal font to
-# "MesloLGS NF LCARS", and reference the codepoints from prompt segments.
+# Install the output into your user font dir (or, better, copy it under
+# fonts/MesloLGS-NF-LCARS/ and run install-fonts.sh, which picks the right
+# per-OS path), set your terminal font to "MesloLGS NF LCARS", and reference
+# the codepoints from prompt segments.
 #
 # PUA mapping (chosen because U+E1xx is fully unused by MesloLGS NF, so we
 # can't collide with any Nerd Font / Powerline glyph):
@@ -191,7 +192,8 @@ def main(argv: list[str]) -> int:
 
     print("\nDone.")
     print(f"Trekbats glyphs live at U+{PUA_BASE:04X}–U+{PUA_BASE + 54:04X}.")
-    print("Install with: cp '" + OUT_DIR + "'/*.ttf ~/Library/Fonts/")
+    print("Install with: copy '" + OUT_DIR + "'/*.ttf into fonts/MesloLGS-NF-LCARS/ "
+          "and run scripts/install-fonts.sh")
     return 0
 
 

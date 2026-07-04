@@ -9,14 +9,15 @@
 #             auto-pointed at this repo's location)
 #   Step 3  — ~/.p10k.zsh symlinked to lcars10k's config (your wizard
 #             config is backed up to ~/.p10k.zsh.pre-lcars10k)
-#   Step 4  — fonts (MesloLGS NF, MesloLGS NF LCARS, Antonio) installed to
-#             ~/Library/Fonts; the LCARS variant carries the Starfleet delta
+#   Step 4  — fonts (MesloLGS NF, MesloLGS NF LCARS, Antonio) installed to the
+#             user font dir (~/Library/Fonts on macOS, ~/.local/share/fonts on
+#             Linux); the LCARS variant carries the Starfleet delta
 #   Step 5  — TNG sound samples fetched into sounds/ (off by default;
 #             enable with LCARS_SOUNDS=1 in ~/.lcars10krc)
 #   Step 6  — terminal profile / font config for iTerm2, Terminal.app,
-#             Ghostty, or fallback instructions for others
+#             Ghostty, kitty, or fallback instructions for others
 #
-# Idempotent. Safe to rerun any time. macOS only (v1 scope).
+# Idempotent. Safe to rerun any time. Supports macOS and Linux.
 #
 # Usage:
 #   ./scripts/setup.sh [--help] [--dry-run] [--force]
@@ -26,6 +27,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 LCARS_HOME="$( cd -- "$SCRIPT_DIR/.." &> /dev/null && pwd )"
+source "$SCRIPT_DIR/_lib.sh"
 
 # ------------------------------------------------------------------------
 # Constants
@@ -87,9 +89,11 @@ ${_bold}WHAT IT TOUCHES${_reset}
   ~/.zshrc                       source line appended
   ~/.lcars10krc                  written from template (LCARS_HOME patched)
   ~/.p10k.zsh                    symlink to config/p10k.zsh (backup preserved)
-  ~/Library/Fonts/               MesloLGS NF (+ LCARS variant) + Antonio copied in
+  user font dir                  MesloLGS NF (+ LCARS variant) + Antonio copied in
+                                 (~/Library/Fonts | ~/.local/share/fonts)
   ./sounds/*.wav                 TNG audio fetched (~200KB total)
-  iTerm2/Terminal/Ghostty conf   LCARS profile or font setting written
+  terminal config                LCARS profile or font setting written
+                                 (iTerm2/Terminal/Ghostty/kitty where supported)
 EOF
 }
 
@@ -138,8 +142,8 @@ do_or_dry() {
 # Preflight
 # ------------------------------------------------------------------------
 preflight() {
-    if [[ "$(uname)" != "Darwin" ]]; then
-        echo "${_alert}setup.sh: macOS only.${_reset} Linux/WSL is a v2 roadmap item." >&2
+    if [[ "$LCARS_OS" == "unknown" ]]; then
+        echo "${_alert}setup.sh: unsupported OS ($(uname -s)).${_reset} macOS and Linux are supported." >&2
         exit 2
     fi
     if [[ ! -f "$P10K_SRC" ]]; then
@@ -232,8 +236,8 @@ step_fonts() {
         warn "install-fonts.sh not executable; skipping"
         return
     fi
-    if [[ -f "$HOME/Library/Fonts/MesloLGS NF LCARS Regular.ttf" && $FORCE -eq 0 ]]; then
-        ok "MesloLGS NF LCARS already in ~/Library/Fonts (use --force to reinstall)"
+    if [[ -f "$(lcars_fonts_dir)/MesloLGS NF LCARS Regular.ttf" && $FORCE -eq 0 ]]; then
+        ok "MesloLGS NF LCARS already in $(lcars_fonts_dir) (use --force to reinstall)"
         return
     fi
     if (( DRY_RUN )); then
@@ -261,7 +265,7 @@ step_sounds() {
     fi
     if ! command -v sox >/dev/null 2>&1; then
         warn "sox not installed — sounds will be raw MP3 (still playable, but not normalised)"
-        note "to normalise: ${_sky}brew install sox${_reset} then rerun this setup with --force"
+        note "to normalise: ${_sky}$(lcars_sox_hint)${_reset} then rerun this setup with --force"
     fi
     local have_sounds=0
     if compgen -G "$LCARS_HOME/sounds/*.wav" > /dev/null; then
@@ -294,6 +298,10 @@ step_terminal() {
         note "skipped (--skip-terminal)"
         return
     fi
+    if [[ "$LCARS_OS" == "linux" ]]; then
+        step_terminal_linux
+        return
+    fi
     case "${TERM_PROGRAM:-unknown}" in
         iTerm.app)        configure_iterm2 ;;
         Apple_Terminal)   configure_terminalapp ;;
@@ -306,6 +314,54 @@ step_terminal() {
         *)                warn "unrecognised \$TERM_PROGRAM (${TERM_PROGRAM:-unset})" ;
                           note "set your terminal font manually to: ${_sky}$FONT_DISPLAY_NAME${_reset} size ~$FONT_SIZE" ;;
     esac
+}
+
+# Linux terminals don't advertise themselves through $TERM_PROGRAM the way macOS
+# ones do, so detect by the env vars / $TERM values each sets. We only auto-write
+# config for terminals with a simple, append-safe key=value config file (Ghostty,
+# kitty); everything else gets a precise manual instruction rather than risk
+# malforming a TOML/Lua/dconf config.
+step_terminal_linux() {
+    if [[ -n "${GHOSTTY_RESOURCES_DIR:-}" || "${TERM:-}" == *ghostty* ]]; then
+        configure_ghostty
+    elif [[ -n "${KITTY_WINDOW_ID:-}" || "${TERM:-}" == *kitty* ]]; then
+        configure_kitty
+    elif [[ -n "${ALACRITTY_WINDOW_ID:-}" || -n "${ALACRITTY_SOCKET:-}" ]]; then
+        note "Alacritty — add to ${_sky}~/.config/alacritty/alacritty.toml${_reset}:"
+        note "  [font.normal]"
+        note "  family = \"${FONT_DISPLAY_NAME}\""
+    elif [[ "${TERM_PROGRAM:-}" == "WezTerm" || -n "${WEZTERM_EXECUTABLE:-}" ]]; then
+        note "WezTerm — add to ${_sky}~/.config/wezterm/wezterm.lua${_reset}:"
+        note "  config.font = wezterm.font '${FONT_DISPLAY_NAME}'"
+    elif [[ "${TERM_PROGRAM:-}" == "vscode" ]]; then
+        note "VS Code integrated terminal — set 'terminal.integrated.fontFamily' to:"
+        note "  ${_sky}$FONT_DISPLAY_NAME${_reset}"
+    else
+        note "set your terminal font manually to: ${_sky}$FONT_DISPLAY_NAME${_reset} size ~$FONT_SIZE"
+        note "(GNOME Terminal, Konsole, etc. set the font in their GUI preferences)"
+    fi
+}
+
+configure_kitty() {
+    local kitty_cfg="$HOME/.config/kitty/kitty.conf"
+    if (( DRY_RUN == 0 )); then
+        mkdir -p "$(dirname "$kitty_cfg")"
+        touch "$kitty_cfg"
+    fi
+    if grep -Fq "font_family $FONT_DISPLAY_NAME" "$kitty_cfg" 2>/dev/null; then
+        ok "kitty config already has font_family $FONT_DISPLAY_NAME"
+        return
+    fi
+    if (( DRY_RUN == 0 )); then
+        {
+            echo ""
+            echo "# lcars10k"
+            echo "font_family $FONT_DISPLAY_NAME"
+            echo "font_size $FONT_SIZE"
+        } >> "$kitty_cfg"
+    fi
+    ok "appended font config to ${_sky}$kitty_cfg${_reset}"
+    note "reload kitty (ctrl-shift-f5) or restart it to apply"
 }
 
 configure_iterm2() {
@@ -393,7 +449,7 @@ show_summary() {
     printf '%s\n' "${_pumpkin}└────────────────────────────────────────────────────────┘${_reset}"
     cat <<EOF
 
-Open a new ${_bold}iTerm2${_reset} tab on the ${_bold}LCARS${_reset} profile, or run ${_sky}exec zsh${_reset}.
+Open a new terminal window (on the ${_bold}LCARS${_reset} profile where supported), or run ${_sky}exec zsh${_reset}.
 
 ${_bold}Session commands${_reset}
   ${_sky}lcars-loud${_reset}              enable sound effects for this session
