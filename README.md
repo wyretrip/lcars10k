@@ -20,10 +20,11 @@ A Star Trek LCARS-themed Zsh prompt, hard-forked from
 
 ## Requirements
 
-- macOS (v1 is macOS-only; Linux/WSL is on the v2 roadmap)
+- macOS or Linux
 - Zsh ≥ 5.8
 - A Nerd Font in your terminal (MesloLGS NF is bundled and recommended)
-- Optional: Homebrew + `sox` for sound normalisation
+- Optional: `sox` for sound normalisation (`brew install sox` on macOS; `sudo apt install sox` / your package manager on Linux)
+- Optional: an audio player for sound effects — macOS `afplay` is built in; on Linux install one of `paplay`/`pw-play`/`ffplay`/`mpv`/`sox`
 - Optional: the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) on your `PATH` for the `lcars` ask command
 
 ## Install
@@ -51,11 +52,16 @@ that carries the **Starfleet delta** (U+E100) shown in the `LCARS` pill. Stock `
 is installed alongside it and works fine if you prefer it, but it renders a blank where the
 delta should be.
 
+Fonts install to `~/Library/Fonts` on macOS and `~/.local/share/fonts` on Linux (with the
+fontconfig cache refreshed automatically). Terminal font is set automatically for iTerm2,
+Terminal.app, Ghostty, and kitty; other terminals (GNOME Terminal, Konsole, Alacritty,
+WezTerm, …) print a one-line instruction to set the font to `MesloLGS NF LCARS` yourself.
+
 <details>
 <summary>Manual install (if you'd rather not run the script)</summary>
 
 ```sh
-~/.lcars10k/scripts/install-fonts.sh                  # fonts → ~/Library/Fonts
+~/.lcars10k/scripts/install-fonts.sh                  # fonts → ~/Library/Fonts (macOS) or ~/.local/share/fonts (Linux)
 ~/.lcars10k/scripts/install-sounds.sh                 # optional TNG samples
 cp ~/.lcars10k/config/lcars10krc.template ~/.lcars10krc
 cp ~/.p10k.zsh ~/.p10k.zsh.pre-lcars10k 2>/dev/null   # back up any existing config
@@ -72,7 +78,7 @@ Federation and LCARSGTJ3 are LCARS-flavored display fonts that we could not bund
 - **Federation** — search "Federation font Pixel Sagas" and download from the original source. Check the included license; some variants require a commercial license for redistribution.
 - **LCARSGTJ3** — search "LCARSGTJ3 Joey Bumgardner". Originally distributed for free use.
 
-After downloading, drop the `.ttf` files into `~/Library/Fonts` directly, or run `~/.lcars10k/scripts/install-fonts.sh` after placing them under `~/.lcars10k/fonts/Federation/` or `~/.lcars10k/fonts/LCARSGTJ3/`.
+After downloading, drop the `.ttf` files into your user font dir (`~/Library/Fonts` on macOS, `~/.local/share/fonts` on Linux) directly, or run `~/.lcars10k/scripts/install-fonts.sh` after placing them under `~/.lcars10k/fonts/Federation/` or `~/.lcars10k/fonts/LCARSGTJ3/`.
 
 ## Configuration
 
@@ -85,6 +91,7 @@ Env-var knobs live in `~/.lcars10krc`. The most useful ones:
 | `LCARS_LONGCMD_THRESHOLD` | `5` | Seconds before a command counts as "long" |
 | `LCARS_REDALERT_AUTO` | `1` | Auto-engage Red Alert on 3 consecutive failures |
 | `LCARS_NUMERIC_IDS` | `1` | Show LCARS Okuda IDs in the prompt |
+| `LCARS_SOUND_PLAYER` | _(auto)_ | Force a playback command (else auto-detected: `afplay` on macOS; `paplay`/`pw-play`/`ffplay`/`mpv`/`play`/`aplay` on Linux) |
 
 The four `LCARS_SOUND_*` variables (startup / success / failure / longcmd) can be pointed at
 your own samples. Prompt layout, palette, and segment order live in `~/.p10k.zsh` (installed

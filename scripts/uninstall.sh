@@ -7,15 +7,16 @@
 #   ~/.lcars10krc       — removed
 #   ~/.p10k.zsh         — symlink removed (only if it points at our config);
 #                         ~/.p10k.zsh.pre-lcars10k restored if present
-#   ~/Library/Fonts/    — the four "MesloLGS NF LCARS" files (stock MesloLGS NF
-#                         and Antonio are left alone)
-#   terminal config     — iTerm2 dynamic profile deleted; Ghostty block removed;
-#                         Terminal.app gets a manual note (no prior value stored)
+#   user font dir       — the four "MesloLGS NF LCARS" files (stock MesloLGS NF
+#                         and Antonio are left alone); ~/Library/Fonts on macOS,
+#                         ~/.local/share/fonts on Linux
+#   terminal config     — iTerm2 dynamic profile deleted; Ghostty / kitty blocks
+#                         removed; GUI terminals get a manual note
 #
 # Repo-local files (sounds/*.wav, *.zwc) are left untouched — they vanish when
 # you delete the repo.
 #
-# Idempotent. Safe to rerun. macOS only (v1 scope).
+# Idempotent. Safe to rerun. Supports macOS and Linux.
 #
 # Usage:
 #   ./scripts/uninstall.sh [--help] [--dry-run] [--yes]
@@ -24,6 +25,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 LCARS_HOME="$( cd -- "$SCRIPT_DIR/.." &> /dev/null && pwd )"
+source "$SCRIPT_DIR/_lib.sh"
 
 # ------------------------------------------------------------------------
 # Constants — must match scripts/setup.sh
@@ -35,8 +37,9 @@ LCARSRC="$HOME/.lcars10krc"
 P10KRC="$HOME/.p10k.zsh"
 P10K_BACKUP="$HOME/.p10k.zsh.pre-lcars10k"
 P10K_SRC="$LCARS_HOME/config/p10k.zsh"
-FONTS_DST="$HOME/Library/Fonts"
+FONTS_DST="$(lcars_fonts_dir)"
 FONT_DISPLAY_NAME="MesloLGS NF LCARS"
+KITTY_CFG="$HOME/.config/kitty/kitty.conf"
 LCARS_FONT_FILES=(
     "MesloLGS NF LCARS Regular.ttf"
     "MesloLGS NF LCARS Bold.ttf"
@@ -77,8 +80,8 @@ ${_bold}WHAT IT REMOVES${_reset}
   ~/.zshrc                   lcars10k comment + source line
   ~/.lcars10krc              deleted
   ~/.p10k.zsh                symlink removed; .pre-lcars10k backup restored if any
-  ~/Library/Fonts/           "MesloLGS NF LCARS" files only (stock Meslo + Antonio kept)
-  iTerm2 / Ghostty config    lcars10k profile / config block removed
+  user font dir              "MesloLGS NF LCARS" files only (stock Meslo + Antonio kept)
+  iTerm2/Ghostty/kitty conf  lcars10k profile / config block removed
 EOF
 }
 
@@ -121,8 +124,8 @@ do_or_dry() {
 # Preflight + confirmation
 # ------------------------------------------------------------------------
 preflight() {
-    if [[ "$(uname)" != "Darwin" ]]; then
-        echo "${_alert}uninstall.sh: macOS only.${_reset}" >&2
+    if [[ "$LCARS_OS" == "unknown" ]]; then
+        echo "${_alert}uninstall.sh: unsupported OS ($(uname -s)).${_reset}" >&2
         exit 2
     fi
 }
@@ -219,6 +222,7 @@ step_fonts() {
         fi
     done
     if (( removed > 0 )); then
+        (( DRY_RUN )) || lcars_refresh_font_cache
         ok "removed $removed LCARS font file(s)"
     else
         ok "no LCARS fonts present"
@@ -248,8 +252,22 @@ step_terminal() {
     else
         ok "no Ghostty lcars10k block"
     fi
-    note "Terminal.app font can't be auto-reverted — set it back manually if needed"
-    note "  Terminal → Settings → Profiles → Basic → Font"
+    # kitty config block (Linux setup appends here)
+    if [[ -f "$KITTY_CFG" ]] && grep -Fq "font_family $FONT_DISPLAY_NAME" "$KITTY_CFG" 2>/dev/null; then
+        do_or_dry _strip_lines "$KITTY_CFG" \
+            "# lcars10k" \
+            "font_family $FONT_DISPLAY_NAME" \
+            "font_size 13"
+        ok "removed lcars10k block from kitty config"
+    else
+        ok "no kitty lcars10k block"
+    fi
+    if [[ "$LCARS_OS" == "macos" ]]; then
+        note "Terminal.app font can't be auto-reverted — set it back manually if needed"
+        note "  Terminal → Settings → Profiles → Basic → Font"
+    else
+        note "GUI terminals (GNOME Terminal, Konsole, …) — revert the font in their preferences"
+    fi
 }
 
 show_summary() {

@@ -16,6 +16,11 @@ export LCARS_SOUNDS=0
 # than this play the success/failure chirp instead.
 export LCARS_LONGCMD_THRESHOLD=5
 
+# Playback backend. Leave unset to auto-detect (afplay on macOS; paplay,
+# pw-play, ffplay, mpv, sox's play, or aplay on Linux). Set it to force a
+# specific command — flags are allowed, e.g. "ffplay -nodisp -autoexit".
+# export LCARS_SOUND_PLAYER="paplay"
+
 # Sound file paths. Override to use your own samples.
 export LCARS_SOUND_STARTUP="$LCARS_HOME/sounds/computer-boot.wav"
 export LCARS_SOUND_SUCCESS="$LCARS_HOME/sounds/beep-chirp.wav"

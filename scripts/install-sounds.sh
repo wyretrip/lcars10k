@@ -7,6 +7,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source "$SCRIPT_DIR/_lib.sh"
 SOUNDS_DIR="$SCRIPT_DIR/../sounds"
 
 # role -> URL. Verified at install-script authoring time (2026-06-08).
@@ -77,11 +78,12 @@ for i in "${!LCARS_FILES[@]}"; do
             mv "$tmp.norm.wav" "$target"
         fi
     else
-        # No sox — afplay handles mp3-in-.wav transparently, just rename.
-        # The file will be unnormalised; install sox and rerun with --force
-        # to normalize properly.
+        # No sox — the file stays MP3 (just renamed to .wav). macOS afplay and
+        # the Linux ffplay/mpv/play backends handle MP3 transparently; paplay/
+        # aplay do not, so install sox for a real PCM WAV + loudness match.
         mv "$tmp" "$target"
-        echo "    note: sox not installed; sound is unnormalised. brew install sox && rerun with --force to fix."
+        echo "    note: sox not installed; sound is raw MP3 and unnormalised."
+        echo "          $(lcars_sox_hint) && rerun with --force to fix."
     fi
     rm -f "$tmp"
 done
