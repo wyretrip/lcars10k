@@ -53,8 +53,11 @@ for i in "${!LCARS_FILES[@]}"; do
     fi
 
     echo "  fetch: $filename"
-    # download to tmp, convert MP3->WAV if sox is installed
-    tmp="$(mktemp -t lcars-sound).$i"
+    # download to tmp, convert MP3->WAV if sox is installed.
+    # Use an explicit XXXXXX template: BSD/macOS mktemp treats `-t name` as a
+    # prefix, but GNU mktemp requires the trailing X's, so `-t lcars-sound`
+    # fails on Linux with "too few X's in template".
+    tmp="$(mktemp "${TMPDIR:-/tmp}/lcars-sound.$i.XXXXXX")"
     if ! curl -sLfo "$tmp" "$url"; then
         echo "    ERROR: failed to fetch $url" >&2
         rm -f "$tmp"
